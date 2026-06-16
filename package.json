@@ -1,0 +1,17 @@
+{
+  "name": "vbtournament",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test tournament.test.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^9.4.3",
+    "cookie-parser": "^1.4.6",
+    "dotenv": "^16.4.5",
+    "ejs": "^3.1.9",
+    "express": "^4.18.2",
+    "qrcode": "^1.5.3"
+  }
+}
