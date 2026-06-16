@@ -207,6 +207,22 @@ app.get('/api/state', (req, res) => {
   res.json({ teams, matches, standings });
 });
 
+// ── Public Pages ─────────────────────────────────────────────────────────────
+app.get('/', (req, res) => {
+  const { teams, matches, standings } = buildState();
+  res.render('index', { teams, matches, standings });
+});
+
+app.get('/tv', (req, res) => {
+  const { teams, matches, standings } = buildState();
+  res.render('tv', { teams, matches, standings });
+});
+
+app.get('/qr', async (req, res) => {
+  const qrDataUrl = await QRCode.toDataURL(BASE_URL, { width: 280, margin: 2 });
+  res.render('qr', { qrDataUrl, baseUrl: BASE_URL });
+});
+
 // ── Health ────────────────────────────────────────────────────────────────────
 app.get('/health', (req, res) => res.send('ok'));
 

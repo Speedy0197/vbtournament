@@ -1,0 +1,50 @@
+<%- include('_header', { title: 'TV Display', refresh: true, hideNav: true, bodyClass: 'tv' }) %>
+
+<div class="tv-header">🏐 Volleyball Tournament</div>
+
+<% const liveMatches = matches.filter(m => m.status === 'active'); %>
+<% const courts = [1, 2]; %>
+
+<div class="tv-courts">
+  <% courts.forEach(court => { %>
+  <div class="tv-court">
+    <div class="tv-court-label">Court <%= court %></div>
+    <% const courtMatch = liveMatches.find(m => m.court === court) || matches.find(m => m.court === court && m.status === 'pending'); %>
+    <% if (courtMatch) { %>
+    <div class="tv-match">
+      <div class="tv-team"><%= courtMatch.team1_name %></div>
+      <div>
+        <% const setsW1 = (courtMatch.sets||[]).filter(s => s.team1_score > s.team2_score).length; %>
+        <% const setsW2 = (courtMatch.sets||[]).filter(s => s.team2_score > s.team1_score).length; %>
+        <div class="tv-score"><%= setsW1 %> – <%= setsW2 %></div>
+        <div class="tv-sets">
+          <% (courtMatch.sets||[]).forEach(s => { %>
+          <span><%= s.team1_score %>–<%= s.team2_score %></span>&nbsp;
+          <% }); %>
+        </div>
+        <div class="tv-bracket-label"><%= courtMatch.status === 'active' ? '🔴 LIVE' : 'NEXT' %></div>
+      </div>
+      <div class="tv-team"><%= courtMatch.team2_name %></div>
+    </div>
+    <% } else { %>
+    <div class="tv-empty">No match scheduled</div>
+    <% } %>
+  </div>
+  <% }); %>
+</div>
+
+<div class="tv-standings">
+  <% ['A','B'].forEach(g => { %>
+  <div>
+    <div class="tv-group-title">Group <%= g %></div>
+    <% (standings[g] || []).forEach((s, i) => { %>
+    <div class="tv-standing-row">
+      <span class="tv-standing-rank"><%= i + 1 %></span>
+      <span class="tv-standing-name"><%= s.team.name %></span>
+      <span class="tv-standing-wl"><%= s.wins %>W–<%= s.losses %>L</span>
+    </div>
+    <% }); %>
+  </div>
+  <% }); %>
+</div>
+<%- include('_footer') %>

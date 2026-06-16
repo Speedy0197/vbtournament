@@ -1,0 +1,8 @@
+<%- include('_header', { title: 'QR Code' }) %>
+<div class="qr-container">
+  <h1 class="page-title">Scan to follow scores</h1>
+  <img src="<%= qrDataUrl %>" alt="QR code for <%= baseUrl %>">
+  <div class="qr-url"><%= baseUrl %></div>
+  <p style="color:var(--muted);margin-top:12px;font-size:0.85rem">Points to the live scoreboard</p>
+</div>
+<%- include('_footer') %>

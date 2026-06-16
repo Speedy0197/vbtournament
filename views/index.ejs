@@ -1,0 +1,101 @@
+<%- include('_header', { title: 'Scores', refresh: true }) %>
+
+<% const liveMatches    = matches.filter(m => m.status === 'active'); %>
+<% const groupMatches   = matches.filter(m => m.phase === 'group'); %>
+<% const bracketMatches = matches.filter(m => m.phase !== 'group'); %>
+<% const upcomingGroup  = groupMatches.filter(m => m.status === 'pending').slice(0, 6); %>
+
+<% if (liveMatches.length > 0) { %>
+<p class="section-title">🔴 Live Now</p>
+<% for (const m of liveMatches) { %>
+<div class="card match-card">
+  <div class="match-teams">
+    <div class="team-name"><%= m.team1_name %></div>
+    <div class="match-vs">vs</div>
+    <div class="team-name"><%= m.team2_name %></div>
+  </div>
+  <div>
+    <% if (m.sets.length > 0) { %>
+      <% for (const s of m.sets) { %>
+      <div style="display:flex;gap:8px;align-items:center;margin:2px 0">
+        <span class="team-score" style="font-size:1.1rem"><%= s.team1_score %></span>
+        <span style="color:var(--muted)">–</span>
+        <span class="team-score" style="font-size:1.1rem"><%= s.team2_score %></span>
+        <span class="match-meta">Set <%= s.set_number %></span>
+      </div>
+      <% } %>
+    <% } else { %>
+      <span class="badge badge-live">Live</span>
+    <% } %>
+  </div>
+</div>
+<% } %>
+<% } %>
+
+<% if (bracketMatches.length > 0) { %>
+<p class="section-title">🏆 Bracket</p>
+<div class="grid-2">
+  <div>
+    <p style="font-size:0.8rem;font-weight:600;color:var(--gold);margin-bottom:8px">GOLD</p>
+    <% for (const m of bracketMatches.filter(x => x.phase.includes('gold'))) { %>
+    <div class="card" style="margin-bottom:6px">
+      <div style="font-size:0.75rem;color:var(--muted);margin-bottom:6px"><%= m.label || m.phase.replace('_',' ').toUpperCase() %></div>
+      <div style="font-weight:600"><%= m.team1_name %> <span style="color:var(--muted)">vs</span> <%= m.team2_name %></div>
+      <% if (m.sets.length > 0) { %>
+      <div class="sets-display"><%= m.sets.map(s => `${s.team1_score}–${s.team2_score}`).join(' | ') %></div>
+      <% } %>
+      <span class="badge badge-<%= m.status %>" style="margin-top:4px"><%= m.status %></span>
+    </div>
+    <% } %>
+  </div>
+  <div>
+    <p style="font-size:0.8rem;font-weight:600;color:var(--silver);margin-bottom:8px">SILVER</p>
+    <% for (const m of bracketMatches.filter(x => x.phase.includes('silver'))) { %>
+    <div class="card" style="margin-bottom:6px">
+      <div style="font-size:0.75rem;color:var(--muted);margin-bottom:6px"><%= m.label || m.phase.replace('_',' ').toUpperCase() %></div>
+      <div style="font-weight:600"><%= m.team1_name %> <span style="color:var(--muted)">vs</span> <%= m.team2_name %></div>
+      <% if (m.sets.length > 0) { %>
+      <div class="sets-display"><%= m.sets.map(s => `${s.team1_score}–${s.team2_score}`).join(' | ') %></div>
+      <% } %>
+      <span class="badge badge-<%= m.status %>" style="margin-top:4px"><%= m.status %></span>
+    </div>
+    <% } %>
+  </div>
+</div>
+<% } %>
+
+<p class="section-title">Group Standings</p>
+<div class="grid-2">
+  <% ['A','B'].forEach(g => { %>
+  <div>
+    <p style="font-size:0.85rem;font-weight:600;margin-bottom:6px">Group <%= g %></p>
+    <table class="standings-table">
+      <thead><tr><th class="rank">#</th><th class="team-col">Team</th><th class="num">W</th><th class="num">L</th><th class="num">Sets</th></tr></thead>
+      <tbody>
+        <% (standings[g] || []).forEach((s, i) => { %>
+        <tr>
+          <td class="rank <%= i < 2 ? 'advance' : i < 4 ? 'silver-zone' : '' %>"><%= i + 1 %></td>
+          <td class="team-col"><%= s.team.name %></td>
+          <td class="num"><%= s.wins %></td>
+          <td class="num"><%= s.losses %></td>
+          <td class="num"><%= s.setsWon %>–<%= s.setsLost %></td>
+        </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+  <% }); %>
+</div>
+
+<% if (upcomingGroup.length > 0) { %>
+<p class="section-title">Upcoming</p>
+<% for (const m of upcomingGroup) { %>
+<div class="card">
+  <div style="font-weight:600"><%= m.team1_name %> vs <%= m.team2_name %></div>
+  <% if (m.court) { %><div class="match-meta">Court <%= m.court %></div><% } %>
+</div>
+<% } %>
+<% } %>
+
+<p style="font-size:0.75rem;color:var(--muted);text-align:center;margin-top:32px">Refreshes every 10 seconds</p>
+<%- include('_footer') %>
