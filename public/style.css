@@ -95,6 +95,12 @@ input[type="number"] { width: 72px; text-align: center; font-size: 1.2rem; font-
 .match-row-score { font-size: 0.9rem; color: var(--muted); margin: 0 16px; }
 .match-row-actions { display: flex; gap: 8px; align-items: center; }
 
+/* Team icons */
+.team-icon { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.team-icon-lg { width: 48px; height: 48px; }
+.team-icon-placeholder { width: 32px; height: 32px; border-radius: 50%; background: var(--blue); color: white; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; flex-shrink: 0; }
+.team-icon-placeholder.team-icon-lg { width: 48px; height: 48px; font-size: 1.1rem; }
+
 /* TV Display */
 body.tv {
   background: #0f172a;
@@ -107,8 +113,10 @@ body.tv main { max-width: 100%; padding: 24px; }
 .tv-court { background: #1e293b; border-radius: 12px; padding: 24px; text-align: center; }
 .tv-court-label { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.1em; color: #94a3b8; margin-bottom: 16px; }
 .tv-match { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-.tv-team { font-size: 1.6rem; font-weight: 700; flex: 1; }
-.tv-team:last-child { text-align: right; }
+.tv-team { font-size: 1.6rem; font-weight: 700; flex: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.tv-team.tv-team-right { align-items: flex-end; }
+.team-icon-tv { width: 64px; height: 64px; font-size: 1.4rem; }
+.team-icon-tv.team-icon-placeholder { width: 64px; height: 64px; font-size: 1.4rem; }
 .tv-score { font-size: 3rem; font-weight: 900; color: white; min-width: 80px; text-align: center; }
 .tv-sets { font-size: 0.85rem; color: #94a3b8; margin-top: 8px; text-align: center; }
 .tv-empty { color: #475569; font-style: italic; text-align: center; padding: 20px; }

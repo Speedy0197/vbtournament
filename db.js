@@ -7,7 +7,8 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS teams (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL UNIQUE,
-    group_name TEXT NOT NULL CHECK(group_name IN ('A', 'B'))
+    group_name TEXT NOT NULL CHECK(group_name IN ('A', 'B')),
+    icon_path TEXT
   );
 
   CREATE TABLE IF NOT EXISTS matches (
@@ -30,6 +31,9 @@ db.exec(`
   );
 `);
 
+// Migration: add icon_path column for existing databases
+try { db.exec('ALTER TABLE teams ADD COLUMN icon_path TEXT'); } catch (e) {}
+
 const getSetsForMatchStmt = db.prepare(
   'SELECT * FROM sets WHERE match_id = ? ORDER BY set_number'
 );
@@ -49,7 +53,8 @@ const clearAll = db.transaction(() => {
 const getFullState = () => {
   const teams = db.prepare('SELECT * FROM teams ORDER BY group_name, id').all();
   const matches = db.prepare(`
-    SELECT m.*, t1.name AS team1_name, t2.name AS team2_name
+    SELECT m.*, t1.name AS team1_name, t1.icon_path AS team1_icon,
+                t2.name AS team2_name, t2.icon_path AS team2_icon
     FROM matches m
     LEFT JOIN teams t1 ON m.team1_id = t1.id
     LEFT JOIN teams t2 ON m.team2_id = t2.id
@@ -63,7 +68,8 @@ const getFullState = () => {
 
 const getMatchWithSets = (id) => {
   const match = db.prepare(`
-    SELECT m.*, t1.name AS team1_name, t2.name AS team2_name
+    SELECT m.*, t1.name AS team1_name, t1.icon_path AS team1_icon,
+                t2.name AS team2_name, t2.icon_path AS team2_icon
     FROM matches m
     LEFT JOIN teams t1 ON m.team1_id = t1.id
     LEFT JOIN teams t2 ON m.team2_id = t2.id
@@ -99,6 +105,9 @@ const upsertSet = (matchId, setNumber, team1Score, team2Score) =>
 const deleteSetsForMatch = (matchId) =>
   db.prepare('DELETE FROM sets WHERE match_id = ?').run(matchId);
 
+const updateTeamIcon = (id, iconPath) =>
+  db.prepare('UPDATE teams SET icon_path = ? WHERE id = ?').run(iconPath, id);
+
 module.exports = {
   getTeams,
   insertTeam,
@@ -110,4 +119,5 @@ module.exports = {
   clearMatches,
   upsertSet,
   deleteSetsForMatch,
+  updateTeamIcon,
 };

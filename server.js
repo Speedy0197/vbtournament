@@ -2,6 +2,9 @@ require('dotenv').config();
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const QRCode = require('qrcode');
+const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
 const db = require('./db');
 const tournament = require('./tournament');
 
@@ -17,6 +20,24 @@ app.set('view engine', 'ejs');
 app.use(express.static('public'));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+const uploadsDir = path.join(__dirname, 'public', 'uploads', 'teams');
+fs.mkdirSync(uploadsDir, { recursive: true });
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: uploadsDir,
+    filename: (req, file, cb) => {
+      const ext = path.extname(file.originalname).toLowerCase();
+      cb(null, `team-${req.params.id}${ext}`);
+    },
+  }),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) cb(null, true);
+    else cb(new Error('Only image files are allowed'));
+  },
+});
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 function requireAdmin(req, res, next) {
@@ -132,9 +153,23 @@ app.post('/admin/setup', requireAdmin, (req, res) => {
   const validTeams = names
     .map((name, i) => ({ name: name.trim(), group: groups[i] }))
     .filter(t => t.name.length > 0);
+  try {
+    for (const f of fs.readdirSync(uploadsDir)) fs.unlinkSync(path.join(uploadsDir, f));
+  } catch (e) {}
   db.clearAll();
   for (const t of validTeams) db.insertTeam(t.name, t.group);
   res.redirect('/admin/setup?saved=1');
+});
+
+app.post('/admin/team/:id/icon', requireAdmin, upload.single('icon'), (req, res) => {
+  if (!req.file) return res.redirect('/admin');
+  const teamId = Number(req.params.id);
+  const team = db.getTeams().find(t => t.id === teamId);
+  if (team && team.icon_path) {
+    try { fs.unlinkSync(path.join(__dirname, 'public', team.icon_path)); } catch (e) {}
+  }
+  db.updateTeamIcon(teamId, `/uploads/teams/${req.file.filename}`);
+  res.redirect('/admin');
 });
 
 // ── Admin Dashboard ───────────────────────────────────────────────────────────

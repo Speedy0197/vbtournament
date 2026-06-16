@@ -10,9 +10,15 @@
 <% for (const m of liveMatches) { %>
 <div class="card match-card">
   <div class="match-teams">
-    <div class="team-name"><%= m.team1_name %></div>
+    <div class="team-name" style="display:flex;align-items:center;gap:8px">
+      <% if (m.team1_icon) { %><img src="<%= m.team1_icon %>" alt="" class="team-icon"><% } else { %><span class="team-icon-placeholder"><%= m.team1_name.charAt(0).toUpperCase() %></span><% } %>
+      <%= m.team1_name %>
+    </div>
     <div class="match-vs">vs</div>
-    <div class="team-name"><%= m.team2_name %></div>
+    <div class="team-name" style="display:flex;align-items:center;gap:8px">
+      <% if (m.team2_icon) { %><img src="<%= m.team2_icon %>" alt="" class="team-icon"><% } else { %><span class="team-icon-placeholder"><%= m.team2_name.charAt(0).toUpperCase() %></span><% } %>
+      <%= m.team2_name %>
+    </div>
   </div>
   <div>
     <% if (m.sets.length > 0) { %>
@@ -75,7 +81,10 @@
         <% (standings[g] || []).forEach((s, i) => { %>
         <tr>
           <td class="rank <%= i < 2 ? 'advance' : i < 4 ? 'silver-zone' : '' %>"><%= i + 1 %></td>
-          <td class="team-col"><%= s.team.name %></td>
+          <td class="team-col" style="display:flex;align-items:center;gap:8px">
+            <% if (s.team.icon_path) { %><img src="<%= s.team.icon_path %>" alt="" class="team-icon"><% } else { %><span class="team-icon-placeholder"><%= s.team.name.charAt(0).toUpperCase() %></span><% } %>
+            <%= s.team.name %>
+          </td>
           <td class="num"><%= s.wins %></td>
           <td class="num"><%= s.losses %></td>
           <td class="num"><%= s.setsWon %>–<%= s.setsLost %></td>
@@ -92,7 +101,7 @@
 <% for (const m of upcomingGroup) { %>
 <div class="card">
   <div style="font-weight:600"><%= m.team1_name %> vs <%= m.team2_name %></div>
-  <% if (m.court) { %><div class="match-meta">Court <%= m.court %></div><% } %>
+  <% if (m.court) { %><div class="match-meta">Feld <%= m.court %></div><% } %>
 </div>
 <% } %>
 <% } %>

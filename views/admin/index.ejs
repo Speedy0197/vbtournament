@@ -20,6 +20,29 @@
 
 <% if (teams.length === 0) { %>
 <div class="alert alert-info">No teams yet. <a href="/admin/setup">Add teams</a> to get started.</div>
+<% } else { %>
+<p class="section-title">Teams</p>
+<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:24px">
+  <% for (const t of teams) { %>
+  <div style="display:flex;align-items:center;gap:12px;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius)">
+    <% if (t.icon_path) { %>
+    <img src="<%= t.icon_path %>" alt="<%= t.name %>" class="team-icon team-icon-lg">
+    <% } else { %>
+    <span class="team-icon-placeholder team-icon-lg"><%= t.name.charAt(0).toUpperCase() %></span>
+    <% } %>
+    <div style="flex:1">
+      <div style="font-weight:600;font-size:0.9rem"><%= t.name %></div>
+      <div style="font-size:0.75rem;color:var(--muted)">Gruppe <%= t.group_name %></div>
+    </div>
+    <form method="POST" action="/admin/team/<%= t.id %>/icon" enctype="multipart/form-data">
+      <label class="btn btn-sm btn-secondary" style="cursor:pointer">
+        📷 Bild
+        <input type="file" name="icon" accept="image/*" onchange="this.form.submit()" style="display:none">
+      </label>
+    </form>
+  </div>
+  <% } %>
+</div>
 <% } %>
 
 <% if (groupMatches.length > 0) { %>
@@ -40,7 +63,10 @@
       <tbody>
         <% (standings[g] || []).forEach((s, i) => { %>
         <tr class="<%= i < 2 ? 'advance' : (i < 4 ? 'silver-zone' : '') %>">
-          <td><%= s.team.name %></td>
+          <td style="display:flex;align-items:center;gap:8px">
+            <% if (s.team.icon_path) { %><img src="<%= s.team.icon_path %>" alt="" class="team-icon"><% } else { %><span class="team-icon-placeholder"><%= s.team.name.charAt(0).toUpperCase() %></span><% } %>
+            <%= s.team.name %>
+          </td>
           <td><%= s.wins %></td>
           <td><%= s.losses %></td>
         </tr>
