@@ -8,6 +8,9 @@ const tournament = require('./tournament');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const ADMIN_PIN = process.env.ADMIN_PIN || '1234';
+if (!process.env.ADMIN_PIN) {
+  console.warn('[WARNING] ADMIN_PIN env var not set — using default PIN "1234". Set ADMIN_PIN in .env for production.');
+}
 const BASE_URL = (process.env.BASE_URL || `http://localhost:${PORT}`).replace(/\/$/, '');
 
 app.set('view engine', 'ejs');
@@ -83,10 +86,14 @@ function tryAdvanceBracket() {
     db.insertMatch('gold_sf',   1, sA[0].team.id, sB[1].team.id, 'Gold SF 1');
     db.insertMatch('gold_sf',   2, sB[0].team.id, sA[1].team.id, 'Gold SF 2');
 
-    const a3 = sA[2], b3 = sB[2], b4 = sB[3], a4 = sA[3];
+    const a3 = sA[2], b3 = sB[2], a4 = sA[3], b4 = sB[3];
     if (a3 && b3) {
-      db.insertMatch('silver_sf', 1, a3.team.id, (b4 || b3).team.id, 'Silver SF 1');
-      db.insertMatch('silver_sf', 2, b3.team.id, (a4 || a3).team.id, 'Silver SF 2');
+      if (a4 && b4) {
+        db.insertMatch('silver_sf', 1, a3.team.id, b4.team.id, 'Silver SF 1');
+        db.insertMatch('silver_sf', 2, b3.team.id, a4.team.id, 'Silver SF 2');
+      } else {
+        db.insertMatch('silver_sf', 1, a3.team.id, b3.team.id, 'Silver Final 🥈');
+      }
     }
     return;
   }

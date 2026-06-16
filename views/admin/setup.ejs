@@ -5,7 +5,7 @@
 <div class="alert alert-info"><%= message %></div>
 <% } %>
 
-<form method="POST" action="/admin/setup">
+<form method="POST" action="/admin/setup" onsubmit="return <%= teams.length > 0 ? 'confirm(\'This will reset all teams and match data. Continue?\')' : 'true' %>">
   <p style="color:var(--muted);font-size:0.85rem;margin-bottom:16px">
     Enter up to 12 teams. Leave name blank to skip that row. Saving this will reset all existing data.
   </p>
