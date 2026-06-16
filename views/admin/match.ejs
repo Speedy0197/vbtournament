@@ -1,0 +1,30 @@
+<%- include('../_header', { title: 'Enter Score' }) %>
+<a href="/admin" style="font-size:0.85rem;color:var(--muted)">← Back to Admin</a>
+
+<div style="margin-top:16px">
+  <div class="score-entry-header">
+    <span><%= match.team1_name %></span>
+    <span style="font-size:0.9rem;color:var(--muted)">vs</span>
+    <span><%= match.team2_name %></span>
+  </div>
+  <% if (match.label) { %><p style="color:var(--muted);margin-bottom:16px"><%= match.label %></p><% } %>
+
+  <form method="POST">
+    <% const sets = match.sets; %>
+    <% [1,2,3].forEach(n => { %>
+    <% const s = sets.find(x => x.set_number === n) || {}; %>
+    <div class="set-row">
+      <span class="set-label">Set <%= n %><% if (n === 3) { %> <em style="font-size:0.75rem">(if needed)</em><% } %></span>
+      <input type="number" name="s<%= n %>t1" min="0" max="30" value="<%= s.team1_score != null ? s.team1_score : '' %>" placeholder="–">
+      <span class="set-dash">–</span>
+      <input type="number" name="s<%= n %>t2" min="0" max="30" value="<%= s.team2_score != null ? s.team2_score : '' %>" placeholder="–">
+    </div>
+    <% }); %>
+
+    <div class="score-actions">
+      <button type="submit" class="btn">💾 Save Score</button>
+      <a href="/admin" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+<%- include('../_footer') %>

@@ -1,0 +1,38 @@
+<%- include('../_header', { title: 'Admin' }) %>
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+  <h1 class="page-title" style="margin:0">Admin Dashboard</h1>
+  <a href="/admin/logout" class="btn btn-secondary btn-sm">Logout</a>
+</div>
+
+<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px">
+  <a href="/admin/setup" class="btn btn-sm">⚙️ Edit Teams</a>
+  <% if (teams.length > 0 && groupMatches.length === 0) { %>
+  <form method="POST" action="/admin/generate-schedule" style="display:inline">
+    <button type="submit" class="btn btn-sm">📅 Generate Schedule</button>
+  </form>
+  <% } %>
+  <% if (groupMatches.length > 0 && allGroupDone && bracketMatches.length === 0) { %>
+  <form method="POST" action="/admin/advance-bracket" style="display:inline">
+    <button type="submit" class="btn btn-sm" style="background:var(--gold)">🏆 Seed Bracket</button>
+  </form>
+  <% } %>
+</div>
+
+<% if (teams.length === 0) { %>
+<div class="alert alert-info">No teams yet. <a href="/admin/setup">Add teams</a> to get started.</div>
+<% } %>
+
+<% if (groupMatches.length > 0) { %>
+<p class="section-title">Group Stage</p>
+<% for (const m of groupMatches) { %>
+<%- include('../_match_row', { m }) %>
+<% } %>
+<% } %>
+
+<% if (bracketMatches.length > 0) { %>
+<p class="section-title">Bracket</p>
+<% for (const m of bracketMatches) { %>
+<%- include('../_match_row', { m }) %>
+<% } %>
+<% } %>
+<%- include('../_footer') %>

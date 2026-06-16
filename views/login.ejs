@@ -1,0 +1,15 @@
+<%- include('_header', { title: 'Admin Login', hideNav: true }) %>
+<div class="login-box card">
+  <h1>🔒 Admin Login</h1>
+  <% if (typeof error !== 'undefined' && error) { %>
+  <div class="alert alert-info"><%= error %></div>
+  <% } %>
+  <form method="POST" action="/admin/login">
+    <div class="form-group">
+      <label for="pin">PIN</label>
+      <input type="password" id="pin" name="pin" autocomplete="current-password" autofocus>
+    </div>
+    <button type="submit" class="btn">Enter</button>
+  </form>
+</div>
+<%- include('_footer') %>

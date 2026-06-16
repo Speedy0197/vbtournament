@@ -1,0 +1,18 @@
+<div class="match-row">
+  <div class="match-row-teams">
+    <%= m.team1_name || '?' %> vs <%= m.team2_name || '?' %>
+    <% if (m.label) { %> <span class="badge badge-<%= m.phase.includes('gold') ? 'gold' : 'silver' %>"><%= m.label %></span><% } %>
+    <% if (m.court) { %> <span class="badge badge-pending">Court <%= m.court %></span><% } %>
+  </div>
+  <div class="match-row-score">
+    <% if (m.sets && m.sets.length > 0) { %>
+      <%= m.sets.map(s => `${s.team1_score}–${s.team2_score}`).join(', ') %>
+    <% } else { %>
+      –
+    <% } %>
+  </div>
+  <div class="match-row-actions">
+    <span class="badge badge-<%= m.status %>"><%= m.status %></span>
+    <a href="/admin/match/<%= m.id %>/score" class="btn btn-sm">Score</a>
+  </div>
+</div>
