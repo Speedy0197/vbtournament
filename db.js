@@ -30,17 +30,21 @@ db.exec(`
   );
 `);
 
+const getSetsForMatchStmt = db.prepare(
+  'SELECT * FROM sets WHERE match_id = ? ORDER BY set_number'
+);
+
 const getTeams = () =>
   db.prepare('SELECT * FROM teams ORDER BY group_name, name').all();
 
 const insertTeam = (name, group) =>
   db.prepare('INSERT OR IGNORE INTO teams (name, group_name) VALUES (?, ?)').run(name, group);
 
-const clearAll = () => {
+const clearAll = db.transaction(() => {
   db.prepare('DELETE FROM sets').run();
   db.prepare('DELETE FROM matches').run();
   db.prepare('DELETE FROM teams').run();
-};
+});
 
 const getFullState = () => {
   const teams = db.prepare('SELECT * FROM teams ORDER BY group_name, id').all();
@@ -52,9 +56,7 @@ const getFullState = () => {
     ORDER BY m.id
   `).all();
   for (const match of matches) {
-    match.sets = db.prepare(
-      'SELECT * FROM sets WHERE match_id = ? ORDER BY set_number'
-    ).all(match.id);
+    match.sets = getSetsForMatchStmt.all(match.id);
   }
   return { teams, matches };
 };
@@ -68,9 +70,7 @@ const getMatchWithSets = (id) => {
     WHERE m.id = ?
   `).get(id);
   if (!match) return null;
-  match.sets = db.prepare(
-    'SELECT * FROM sets WHERE match_id = ? ORDER BY set_number'
-  ).all(id);
+  match.sets = getSetsForMatchStmt.all(id);
   return match;
 };
 
@@ -82,10 +82,10 @@ const insertMatch = (phase, court, team1Id, team2Id, label) =>
 const updateMatchStatus = (id, status) =>
   db.prepare('UPDATE matches SET status = ? WHERE id = ?').run(status, id);
 
-const clearMatches = () => {
+const clearMatches = db.transaction(() => {
   db.prepare('DELETE FROM sets').run();
   db.prepare('DELETE FROM matches').run();
-};
+});
 
 const upsertSet = (matchId, setNumber, team1Score, team2Score) =>
   db.prepare(`
