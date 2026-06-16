@@ -3,7 +3,7 @@
   "configurations": [
     {
       "name": "tournament",
-      "runtimeExecutable": "node",
+      "runtimeExecutable": "C:\\Users\\Flo\\AppData\\Local\\fnm_multishells\\23524_1781654108751\\node.exe",
       "runtimeArgs": ["server.js"],
       "port": 3000
     }

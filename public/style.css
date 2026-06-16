@@ -18,9 +18,10 @@ a { color: var(--blue); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
 /* Header */
-.site-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; background: var(--blue); color: white; }
+.site-header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 12px 20px; background: var(--blue); color: white; }
 .site-header a { color: white; }
-.site-title { font-weight: 700; font-size: 1.1rem; }
+.site-title { font-weight: 700; font-size: 1.1rem; grid-column: 2; text-align: center; }
+.site-header nav { grid-column: 3; justify-self: end; }
 nav { display: flex; gap: 16px; font-size: 0.9rem; }
 .admin-link { opacity: 0.7; font-size: 0.8rem; }
 
