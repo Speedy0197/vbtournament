@@ -31,6 +31,7 @@ function calculateStandings(teams, matches) {
     stats[winnerId].wins++;
     stats[loserId].losses++;
 
+    if (!stats[match.team1_id] || !stats[match.team2_id]) continue;
     for (const s of (match.sets || [])) {
       stats[match.team1_id].setsWon     += s.team1_score > s.team2_score ? 1 : 0;
       stats[match.team1_id].setsLost    += s.team2_score > s.team1_score ? 1 : 0;
@@ -45,11 +46,11 @@ function calculateStandings(teams, matches) {
 
   return Object.values(stats).sort((a, b) => {
     if (b.wins !== a.wins) return b.wins - a.wins;
-    const aSetR = a.setsLost ? a.setsWon / a.setsLost : a.setsWon;
-    const bSetR = b.setsLost ? b.setsWon / b.setsLost : b.setsWon;
+    const aSetR = a.setsLost === 0 ? Infinity : a.setsWon / a.setsLost;
+    const bSetR = b.setsLost === 0 ? Infinity : b.setsWon / b.setsLost;
     if (Math.abs(bSetR - aSetR) > 0.0001) return bSetR - aSetR;
-    const aPtsR = a.pointsAgainst ? a.pointsFor / a.pointsAgainst : a.pointsFor;
-    const bPtsR = b.pointsAgainst ? b.pointsFor / b.pointsAgainst : b.pointsFor;
+    const aPtsR = a.pointsAgainst === 0 ? Infinity : a.pointsFor / a.pointsAgainst;
+    const bPtsR = b.pointsAgainst === 0 ? Infinity : b.pointsFor / b.pointsAgainst;
     return bPtsR - aPtsR;
   });
 }
