@@ -13,6 +13,7 @@
   <% for (let i = 0; i < 12; i++) { const t = teams[i] || {}; %>
   <div class="team-input-row">
     <input type="text" name="name" placeholder="Team <%= i + 1 %> name" value="<%= t.name || '' %>">
+    <input type="hidden" name="emoji" value="<%= t.icon_path && !t.icon_path.startsWith('/') ? t.icon_path : '' %>">
     <select name="group">
       <option value="A" <%= (t.group_name || (i < 6 ? 'A' : 'B')) === 'A' ? 'selected' : '' %>>Group A</option>
       <option value="B" <%= (t.group_name || (i < 6 ? 'A' : 'B')) === 'B' ? 'selected' : '' %>>Group B</option>

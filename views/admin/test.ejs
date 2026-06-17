@@ -1,0 +1,71 @@
+<%- include('../_header', { title: 'Test Tools' }) %>
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+  <h1 class="page-title" style="margin:0">🧪 Test Tools</h1>
+  <a href="/admin" class="btn btn-secondary btn-sm">← Admin</a>
+</div>
+
+<div class="card" style="margin-bottom:20px">
+  <div style="display:flex;gap:24px;font-size:0.9rem">
+    <span><strong><%= teams.length %></strong> teams</span>
+    <span><strong><%= pendingCount %></strong> pending</span>
+    <span><strong><%= doneCount %></strong> done</span>
+  </div>
+</div>
+
+<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px">
+  <form method="POST" action="/admin/test/seed" onsubmit="return confirm('This will reset all data and generate 12 random teams with a schedule. Continue?')">
+    <button type="submit" class="btn">🎲 Generate Random Teams</button>
+  </form>
+  <% if (teams.length > 0 && groupMatches.length === 0) { %>
+  <form method="POST" action="/admin/generate-schedule" style="display:inline">
+    <button type="submit" class="btn btn-secondary">📅 Generate Schedule</button>
+  </form>
+  <% } %>
+  <% if (pendingCount > 0) { %>
+  <form method="POST" action="/admin/test/fill">
+    <button type="submit" class="btn" style="background:var(--gold)">🎯 Fill All Group Matches</button>
+  </form>
+  <% } %>
+</div>
+
+<% if (teams.length > 0) { %>
+<p class="section-title">Teams</p>
+<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:24px">
+  <% for (const t of teams) { %>
+  <div style="display:flex;align-items:center;gap:12px;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius)">
+    <% if (t.icon_path && t.icon_path.startsWith('/')) { %>
+    <img src="<%= t.icon_path %>" alt="<%= t.name %>" class="team-icon team-icon-lg">
+    <% } else if (t.icon_path) { %>
+    <span class="team-icon-placeholder team-icon-lg"><%= t.icon_path %></span>
+    <% } else { %>
+    <span class="team-icon-placeholder team-icon-lg"><%= t.name.charAt(0).toUpperCase() %></span>
+    <% } %>
+    <div style="flex:1">
+      <div style="font-weight:600;font-size:0.9rem"><%= t.name %></div>
+      <div style="font-size:0.75rem;color:var(--muted)">Gruppe <%= t.group_name %></div>
+    </div>
+  </div>
+  <% } %>
+</div>
+<% } %>
+
+<% if (groupMatches.length > 0) { %>
+<p class="section-title">Group Matches</p>
+<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:24px">
+  <% for (const m of groupMatches) { %>
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius)">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span class="badge badge-<%= m.status %>"><%= m.status %></span>
+      <span style="font-weight:600"><%= m.team1_name %> vs <%= m.team2_name %></span>
+    </div>
+    <div style="color:var(--muted);font-size:0.85rem">
+      <% if (m.sets && m.sets.length > 0) { %>
+        <%= m.sets.map(s => `${s.team1_score}–${s.team2_score}`).join(', ') %>
+      <% } else { %>–<% } %>
+    </div>
+  </div>
+  <% } %>
+</div>
+<% } %>
+
+<%- include('../_footer') %>

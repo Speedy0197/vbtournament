@@ -1,7 +1,10 @@
 <%- include('../_header', { title: 'Admin' }) %>
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
   <h1 class="page-title" style="margin:0">Admin Dashboard</h1>
-  <a href="/admin/logout" class="btn btn-secondary btn-sm">Logout</a>
+  <div style="display:flex;gap:8px;align-items:center">
+    <a href="/admin/test" class="btn btn-secondary btn-sm">🧪 Test</a>
+    <a href="/admin/logout" class="btn btn-secondary btn-sm">Logout</a>
+  </div>
 </div>
 
 <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px">
@@ -26,8 +29,10 @@
 <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:24px">
   <% for (const t of teams) { %>
   <div style="display:flex;align-items:center;gap:12px;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius)">
-    <% if (t.icon_path) { %>
+    <% if (t.icon_path && t.icon_path.startsWith('/')) { %>
     <img src="<%= t.icon_path %>" alt="<%= t.name %>" class="team-icon team-icon-lg">
+    <% } else if (t.icon_path) { %>
+    <span class="team-icon-placeholder team-icon-lg"><%= t.icon_path %></span>
     <% } else { %>
     <span class="team-icon-placeholder team-icon-lg"><%= t.name.charAt(0).toUpperCase() %></span>
     <% } %>
@@ -65,7 +70,7 @@
         <% (standings[g] || []).forEach((s, i) => { %>
         <tr class="<%= i < 2 ? 'advance' : (i < 4 ? 'silver-zone' : '') %>">
           <td style="display:flex;align-items:center;gap:8px">
-            <% if (s.team.icon_path) { %><img src="<%= s.team.icon_path %>" alt="" class="team-icon"><% } else { %><span class="team-icon-placeholder"><%= s.team.name.charAt(0).toUpperCase() %></span><% } %>
+            <% if (s.team.icon_path && s.team.icon_path.startsWith('/')) { %><img src="<%= s.team.icon_path %>" alt="" class="team-icon"><% } else if (s.team.icon_path) { %><span class="team-icon-placeholder"><%= s.team.icon_path %></span><% } else { %><span class="team-icon-placeholder"><%= s.team.name.charAt(0).toUpperCase() %></span><% } %>
             <%= s.team.name %>
           </td>
           <td><%= s.wins %></td>

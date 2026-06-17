@@ -13,7 +13,7 @@
     <% if (courtMatch) { %>
     <div class="tv-match">
       <div class="tv-team">
-        <% if (courtMatch.team1_icon) { %><img src="<%= courtMatch.team1_icon %>" alt="" class="team-icon team-icon-tv"><% } else { %><span class="team-icon-placeholder team-icon-tv"><%= courtMatch.team1_name.charAt(0).toUpperCase() %></span><% } %>
+        <% if (courtMatch.team1_icon && courtMatch.team1_icon.startsWith('/')) { %><img src="<%= courtMatch.team1_icon %>" alt="" class="team-icon team-icon-tv"><% } else if (courtMatch.team1_icon) { %><span class="team-icon-placeholder team-icon-tv"><%= courtMatch.team1_icon %></span><% } else { %><span class="team-icon-placeholder team-icon-tv"><%= courtMatch.team1_name.charAt(0).toUpperCase() %></span><% } %>
         <span><%= courtMatch.team1_name %></span>
       </div>
       <div>
@@ -28,7 +28,7 @@
         <div class="tv-bracket-label"><%= courtMatch.status === 'active' ? '🔴 LIVE' : 'NEXT' %></div>
       </div>
       <div class="tv-team tv-team-right">
-        <% if (courtMatch.team2_icon) { %><img src="<%= courtMatch.team2_icon %>" alt="" class="team-icon team-icon-tv"><% } else { %><span class="team-icon-placeholder team-icon-tv"><%= courtMatch.team2_name.charAt(0).toUpperCase() %></span><% } %>
+        <% if (courtMatch.team2_icon && courtMatch.team2_icon.startsWith('/')) { %><img src="<%= courtMatch.team2_icon %>" alt="" class="team-icon team-icon-tv"><% } else if (courtMatch.team2_icon) { %><span class="team-icon-placeholder team-icon-tv"><%= courtMatch.team2_icon %></span><% } else { %><span class="team-icon-placeholder team-icon-tv"><%= courtMatch.team2_name.charAt(0).toUpperCase() %></span><% } %>
         <span><%= courtMatch.team2_name %></span>
       </div>
     </div>
@@ -46,7 +46,7 @@
     <% (standings[g] || []).forEach((s, i) => { %>
     <div class="tv-standing-row">
       <span class="tv-standing-rank"><%= i + 1 %></span>
-      <% if (s.team.icon_path) { %><img src="<%= s.team.icon_path %>" alt="" class="team-icon"><% } else { %><span class="team-icon-placeholder"><%= s.team.name.charAt(0).toUpperCase() %></span><% } %>
+      <% if (s.team.icon_path && s.team.icon_path.startsWith('/')) { %><img src="<%= s.team.icon_path %>" alt="" class="team-icon"><% } else if (s.team.icon_path) { %><span class="team-icon-placeholder"><%= s.team.icon_path %></span><% } else { %><span class="team-icon-placeholder"><%= s.team.name.charAt(0).toUpperCase() %></span><% } %>
       <span class="tv-standing-name"><%= s.team.name %></span>
       <span class="tv-standing-wl"><%= s.wins %>W–<%= s.losses %>L</span>
     </div>

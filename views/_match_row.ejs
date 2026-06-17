@@ -1,8 +1,8 @@
 <div class="match-row">
   <div class="match-row-teams" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-    <% if (m.team1_icon) { %><img src="<%= m.team1_icon %>" alt="" class="team-icon"><% } else if (m.team1_name) { %><span class="team-icon-placeholder"><%= m.team1_name.charAt(0).toUpperCase() %></span><% } %>
+    <% if (m.team1_icon && m.team1_icon.startsWith('/')) { %><img src="<%= m.team1_icon %>" alt="" class="team-icon"><% } else if (m.team1_icon) { %><span class="team-icon-placeholder"><%= m.team1_icon %></span><% } else if (m.team1_name) { %><span class="team-icon-placeholder"><%= m.team1_name.charAt(0).toUpperCase() %></span><% } %>
     <%= m.team1_name || '?' %> vs
-    <% if (m.team2_icon) { %><img src="<%= m.team2_icon %>" alt="" class="team-icon"><% } else if (m.team2_name) { %><span class="team-icon-placeholder"><%= m.team2_name.charAt(0).toUpperCase() %></span><% } %>
+    <% if (m.team2_icon && m.team2_icon.startsWith('/')) { %><img src="<%= m.team2_icon %>" alt="" class="team-icon"><% } else if (m.team2_icon) { %><span class="team-icon-placeholder"><%= m.team2_icon %></span><% } else if (m.team2_name) { %><span class="team-icon-placeholder"><%= m.team2_name.charAt(0).toUpperCase() %></span><% } %>
     <%= m.team2_name || '?' %>
     <% if (m.label) { %> <span class="badge badge-<%= m.phase.includes('gold') ? 'gold' : 'silver' %>"><%= m.label %></span><% } %>
     <% if (m.court) { %> <span class="badge badge-pending">Feld <%= m.court %></span><% } %>

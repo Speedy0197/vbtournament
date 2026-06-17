@@ -150,14 +150,15 @@ app.get('/admin/setup', requireAdmin, (req, res) => {
 app.post('/admin/setup', requireAdmin, (req, res) => {
   const names  = [].concat(req.body.name  || []);
   const groups = [].concat(req.body.group || []);
+  const emojis = [].concat(req.body.emoji || []);
   const validTeams = names
-    .map((name, i) => ({ name: name.trim(), group: groups[i] }))
+    .map((name, i) => ({ name: name.trim(), group: groups[i], emoji: emojis[i] || null }))
     .filter(t => t.name.length > 0);
   try {
     for (const f of fs.readdirSync(uploadsDir)) fs.unlinkSync(path.join(uploadsDir, f));
   } catch (e) {}
   db.clearAll();
-  for (const t of validTeams) db.insertTeam(t.name, t.group);
+  for (const t of validTeams) db.insertTeam(t.name, t.group, t.emoji);
   res.redirect('/admin/setup?saved=1');
 });
 
@@ -241,6 +242,98 @@ app.post('/admin/match/:id/score', requireAdmin, (req, res) => {
 app.post('/admin/advance-bracket', requireAdmin, (req, res) => {
   tryAdvanceBracket();
   res.redirect('/admin');
+});
+
+// ── Test Tools ────────────────────────────────────────────────────────────────
+const teamPool = [
+  { name: 'Lions',    emoji: '🦁' },
+  { name: 'Tigers',   emoji: '🐯' },
+  { name: 'Eagles',   emoji: '🦅' },
+  { name: 'Wolves',   emoji: '🐺' },
+  { name: 'Foxes',    emoji: '🦊' },
+  { name: 'Bears',    emoji: '🐻' },
+  { name: 'Sharks',   emoji: '🦈' },
+  { name: 'Dolphins', emoji: '🐬' },
+  { name: 'Cobras',   emoji: '🐍' },
+  { name: 'Leopards', emoji: '🐆' },
+  { name: 'Rhinos',   emoji: '🦏' },
+  { name: 'Flames',   emoji: '🔥' },
+  { name: 'Thunder',  emoji: '⚡' },
+  { name: 'Waves',    emoji: '🌊' },
+  { name: 'Tornados', emoji: '🌪️' },
+  { name: 'Falcons',  emoji: '🦋' },
+];
+
+app.get('/admin/test', requireAdmin, (req, res) => {
+  const { teams, matches, standings } = buildState();
+  const groupMatches = matches.filter(m => m.phase === 'group');
+  const pendingMatches = groupMatches.filter(m => m.status === 'pending');
+  const doneMatches = groupMatches.filter(m => m.status === 'done');
+  res.render('admin/test', { teams, groupMatches, standings, pendingCount: pendingMatches.length, doneCount: doneMatches.length });
+});
+
+app.post('/admin/test/seed', requireAdmin, (req, res) => {
+  try {
+    for (const f of fs.readdirSync(uploadsDir)) fs.unlinkSync(path.join(uploadsDir, f));
+  } catch (e) {}
+  db.clearAll();
+
+  const pool = [...teamPool];
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  const selected = pool.slice(0, 12);
+
+  for (let i = 0; i < 12; i++) {
+    db.insertTeam(selected[i].name, i < 6 ? 'A' : 'B', selected[i].emoji);
+  }
+
+  const teams = db.getTeams();
+  const groupA = teams.filter(t => t.group_name === 'A');
+  const groupB = teams.filter(t => t.group_name === 'B');
+  let court = 1;
+  for (const [t1, t2] of tournament.generateRoundRobin(groupA.map(t => t.id))) {
+    db.insertMatch('group', court, t1, t2, null);
+    court = court === 2 ? 1 : 2;
+  }
+  for (const [t1, t2] of tournament.generateRoundRobin(groupB.map(t => t.id))) {
+    db.insertMatch('group', court, t1, t2, null);
+    court = court === 2 ? 1 : 2;
+  }
+
+  res.redirect('/admin/test');
+});
+
+app.post('/admin/test/fill', requireAdmin, (req, res) => {
+  const { matches } = db.getFullState();
+  const pendingGroupMatches = matches.filter(m => m.phase === 'group' && m.status === 'pending');
+
+  for (const match of pendingGroupMatches) {
+    const winner = Math.random() < 0.5 ? 1 : 2;
+    const isThreeSets = Math.random() < 0.3;
+
+    let sets;
+    if (!isThreeSets) {
+      sets = [
+        { n: 1, t1: winner === 1 ? 25 : 15 + Math.floor(Math.random() * 8), t2: winner === 2 ? 25 : 15 + Math.floor(Math.random() * 8) },
+        { n: 2, t1: winner === 1 ? 25 : 15 + Math.floor(Math.random() * 8), t2: winner === 2 ? 25 : 15 + Math.floor(Math.random() * 8) },
+      ];
+    } else {
+      sets = [
+        { n: 1, t1: winner === 1 ? 25 : 15 + Math.floor(Math.random() * 8), t2: winner === 2 ? 25 : 15 + Math.floor(Math.random() * 8) },
+        { n: 2, t1: winner === 1 ? 15 + Math.floor(Math.random() * 8) : 25, t2: winner === 2 ? 15 + Math.floor(Math.random() * 8) : 25 },
+        { n: 3, t1: winner === 1 ? 15 : 8 + Math.floor(Math.random() * 7), t2: winner === 2 ? 15 : 8 + Math.floor(Math.random() * 7) },
+      ];
+    }
+
+    db.deleteSetsForMatch(match.id);
+    for (const s of sets) db.upsertSet(match.id, s.n, s.t1, s.t2);
+    db.updateMatchStatus(match.id, 'done');
+  }
+
+  tryAdvanceBracket();
+  res.redirect('/admin/test');
 });
 
 // ── API ───────────────────────────────────────────────────────────────────────

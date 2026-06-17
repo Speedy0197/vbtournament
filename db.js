@@ -41,8 +41,8 @@ const getSetsForMatchStmt = db.prepare(
 const getTeams = () =>
   db.prepare('SELECT * FROM teams ORDER BY group_name, name').all();
 
-const insertTeam = (name, group) =>
-  db.prepare('INSERT OR IGNORE INTO teams (name, group_name) VALUES (?, ?)').run(name, group);
+const insertTeam = (name, group, iconPath = null) =>
+  db.prepare('INSERT OR IGNORE INTO teams (name, group_name, icon_path) VALUES (?, ?, ?)').run(name, group, iconPath);
 
 const clearAll = db.transaction(() => {
   db.prepare('DELETE FROM sets').run();
