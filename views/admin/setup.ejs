@@ -1,5 +1,8 @@
 <%- include('../_header', { title: 'Team Setup' }) %>
-<h1 class="page-title">Team Setup</h1>
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+  <h1 class="page-title" style="margin-bottom:0">Team Setup</h1>
+  <a href="/admin" class="btn btn-secondary btn-sm">← Back</a>
+</div>
 
 <% if (typeof message !== 'undefined' && message) { %>
 <div class="alert alert-info"><%= message %></div>
@@ -22,12 +25,10 @@
     <input type="text" name="name" placeholder="Team <%= i + 1 %> name" value="<%= t.name || '' %>">
     <input type="hidden" name="emoji" value="<%= t.icon_path && !t.icon_path.startsWith('/') ? t.icon_path : '' %>">
     <% if (t.id) { %>
-    <form method="POST" action="/admin/team/<%= t.id %>/icon" enctype="multipart/form-data" style="margin:0">
-      <label class="btn btn-sm btn-secondary" style="cursor:pointer">
-        📷 Bild
-        <input type="file" name="icon" accept="image/*" onchange="this.form.submit()" style="display:none">
-      </label>
-    </form>
+    <label class="btn btn-sm btn-secondary" style="cursor:pointer">
+      📷 Bild
+      <input type="file" name="icon" accept="image/*" form="icon-form-<%= t.id %>" onchange="document.getElementById('icon-form-<%= t.id %>').submit()" style="display:none">
+    </label>
     <% } else { %>
     <span></span>
     <% } %>
@@ -39,4 +40,9 @@
     <a href="/admin" class="btn btn-secondary">Cancel</a>
   </div>
 </form>
+
+<% for (const t of teams) { %>
+<form id="icon-form-<%= t.id %>" method="POST" action="/admin/team/<%= t.id %>/icon" enctype="multipart/form-data"></form>
+<% } %>
+
 <%- include('../_footer') %>

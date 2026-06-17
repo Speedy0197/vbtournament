@@ -62,6 +62,39 @@
     </div>
   </div>
 
+  <% if (groupMatches.length > 0) { %>
+  <div class="section">
+    <h2>Group Stage Results</h2>
+    <div class="groups">
+      <% ['A', 'B'].forEach(g => { %>
+      <div>
+        <h3>Group <%= g %></h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Match</th>
+              <th style="text-align:center">Score</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% groupMatches.filter(m => { const teams = standings[g] || []; return teams.some(s => s.team.id === m.team1_id); }).forEach(m => { %>
+            <tr>
+              <td><%= m.team1_name %> vs <%= m.team2_name %></td>
+              <td style="text-align:center;font-weight:600">
+                <% if (m.sets && m.sets.length > 0) { %>
+                  <%= m.sets.map(s => `${s.team1_score}–${s.team2_score}`).join(' | ') %>
+                <% } else { %>—<% } %>
+              </td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+      <% }); %>
+    </div>
+  </div>
+  <% } %>
+
   <% if (bracketMatches.length > 0) { %>
   <div class="section">
     <h2>Bracket</h2>

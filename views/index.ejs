@@ -4,11 +4,11 @@
 <% const groupMatches   = matches.filter(m => m.phase === 'group'); %>
 <% const bracketMatches = matches.filter(m => m.phase !== 'group'); %>
 <%
-const MATCH_MIN = 20;
+const MATCH_MIN = 40;
 const courtSlot = {};
 const upcoming10 = [];
 for (const m of matches.filter(x => x.status === 'pending')) {
-  if (upcoming10.length >= 10) break;
+  if (upcoming10.length >= 6) break;
   const c = m.court || 1;
   if (courtSlot[c] === undefined) courtSlot[c] = 0;
   upcoming10.push({ m, approxMin: courtSlot[c] * MATCH_MIN });
@@ -121,6 +121,25 @@ for (const m of matches.filter(x => x.status === 'pending')) {
   </div>
   <div style="white-space:nowrap;font-size:0.85rem;font-weight:600;color:<%= approxMin === 0 ? 'var(--green)' : 'var(--muted)' %>">
     <%= approxMin === 0 ? 'Ongoing' : '~' + approxMin + 'm' %>
+  </div>
+</div>
+<% } %>
+<% } %>
+
+<% const doneGroupMatches = matches.filter(m => m.phase === 'group' && m.status === 'done'); %>
+<% if (doneGroupMatches.length > 0) { %>
+<p class="section-title">Results</p>
+<% for (const m of doneGroupMatches) { %>
+<div class="card" style="display:flex;align-items:center;gap:10px;padding:10px 14px">
+  <div style="flex:1;display:flex;align-items:center;gap:6px;font-size:0.9rem">
+    <% if (m.team1_icon && m.team1_icon.startsWith('/')) { %><img src="<%= m.team1_icon %>" alt="" class="team-icon"><% } else if (m.team1_icon) { %><span class="team-icon-placeholder"><%= m.team1_icon %></span><% } else { %><span class="team-icon-placeholder"><%= m.team1_name.charAt(0).toUpperCase() %></span><% } %>
+    <span style="font-weight:600"><%= m.team1_name %></span>
+    <span style="color:var(--muted);margin:0 4px">vs</span>
+    <% if (m.team2_icon && m.team2_icon.startsWith('/')) { %><img src="<%= m.team2_icon %>" alt="" class="team-icon"><% } else if (m.team2_icon) { %><span class="team-icon-placeholder"><%= m.team2_icon %></span><% } else { %><span class="team-icon-placeholder"><%= m.team2_name.charAt(0).toUpperCase() %></span><% } %>
+    <span style="font-weight:600"><%= m.team2_name %></span>
+  </div>
+  <div style="font-size:0.85rem;font-weight:600;white-space:nowrap">
+    <% if (m.sets && m.sets.length > 0) { %><%= m.sets.map(s => `${s.team1_score}–${s.team2_score}`).join(' | ') %><% } %>
   </div>
 </div>
 <% } %>

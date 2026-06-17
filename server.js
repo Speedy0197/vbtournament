@@ -169,7 +169,7 @@ app.post('/admin/team/:id/icon', requireAdmin, upload.single('icon'), (req, res)
     try { fs.unlinkSync(path.join(__dirname, 'public', team.icon_path)); } catch (e) {}
   }
   db.updateTeamIcon(teamId, `/uploads/teams/${req.file.filename}`);
-  res.redirect('/admin');
+  res.redirect('/admin/setup');
 });
 
 // ── Admin Dashboard ───────────────────────────────────────────────────────────
@@ -184,8 +184,9 @@ app.get('/admin', requireAdmin, (req, res) => {
 // ── Print ─────────────────────────────────────────────────────────────────────
 app.get('/admin/print', requireAdmin, (req, res) => {
   const { matches, standings } = buildState();
+  const groupMatches = matches.filter(m => m.phase === 'group' && m.status === 'done');
   const bracketMatches = matches.filter(m => m.phase !== 'group');
-  res.render('admin/print', { standings, bracketMatches });
+  res.render('admin/print', { standings, groupMatches, bracketMatches });
 });
 
 // ── Schedule Generation ───────────────────────────────────────────────────────
@@ -343,10 +344,6 @@ app.get('/', (req, res) => {
   res.render('index', { teams, matches, standings });
 });
 
-app.get('/tv', (req, res) => {
-  const { teams, matches, standings } = buildState();
-  res.render('tv', { teams, matches, standings });
-});
 
 app.get('/qr', async (req, res) => {
   const qrDataUrl = await QRCode.toDataURL(BASE_URL, { width: 280, margin: 2 });
