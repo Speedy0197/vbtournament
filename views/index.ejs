@@ -3,7 +3,18 @@
 <% const liveMatches    = matches.filter(m => m.status === 'active'); %>
 <% const groupMatches   = matches.filter(m => m.phase === 'group'); %>
 <% const bracketMatches = matches.filter(m => m.phase !== 'group'); %>
-<% const upcomingGroup  = groupMatches.filter(m => m.status === 'pending').slice(0, 6); %>
+<%
+const MATCH_MIN = 20;
+const courtSlot = {};
+const upcoming10 = [];
+for (const m of matches.filter(x => x.status === 'pending')) {
+  if (upcoming10.length >= 10) break;
+  const c = m.court || 1;
+  if (courtSlot[c] === undefined) courtSlot[c] = 0;
+  upcoming10.push({ m, approxMin: courtSlot[c] * MATCH_MIN });
+  courtSlot[c]++;
+}
+%>
 
 <% if (liveMatches.length > 0) { %>
 <p class="section-title">🔴 Live Now</p>
@@ -96,12 +107,21 @@
   <% }); %>
 </div>
 
-<% if (upcomingGroup.length > 0) { %>
+<% if (upcoming10.length > 0) { %>
 <p class="section-title">Upcoming</p>
-<% for (const m of upcomingGroup) { %>
-<div class="card">
-  <div style="font-weight:600"><%= m.team1_name %> vs <%= m.team2_name %></div>
-  <% if (m.court) { %><div class="match-meta">Feld <%= m.court %></div><% } %>
+<% for (const { m, approxMin } of upcoming10) { %>
+<div class="card" style="display:flex;align-items:center;gap:12px;padding:10px 14px">
+  <div style="display:flex;align-items:center;gap:6px;font-weight:600;font-size:0.95rem;flex:1;flex-wrap:wrap">
+    <% if (m.team1_icon && m.team1_icon.startsWith('/')) { %><img src="<%= m.team1_icon %>" alt="" class="team-icon"><% } else if (m.team1_icon) { %><span class="team-icon-placeholder"><%= m.team1_icon %></span><% } else { %><span class="team-icon-placeholder"><%= m.team1_name.charAt(0).toUpperCase() %></span><% } %>
+    <%= m.team1_name %>
+    <span style="color:var(--muted);font-weight:400">vs</span>
+    <% if (m.team2_icon && m.team2_icon.startsWith('/')) { %><img src="<%= m.team2_icon %>" alt="" class="team-icon"><% } else if (m.team2_icon) { %><span class="team-icon-placeholder"><%= m.team2_icon %></span><% } else { %><span class="team-icon-placeholder"><%= m.team2_name.charAt(0).toUpperCase() %></span><% } %>
+    <%= m.team2_name %>
+    <% if (m.court) { %><span class="match-meta" style="font-weight:400">· Feld <%= m.court %><% if (m.label) { %> · <%= m.label %><% } %></span><% } %>
+  </div>
+  <div style="white-space:nowrap;font-size:0.85rem;font-weight:600;color:<%= approxMin === 0 ? 'var(--green)' : 'var(--muted)' %>">
+    <%= approxMin === 0 ? 'Ongoing' : '~' + approxMin + 'm' %>
+  </div>
 </div>
 <% } %>
 <% } %>

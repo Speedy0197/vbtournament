@@ -88,8 +88,7 @@ input[type="number"] { width: 72px; text-align: center; font-size: 1.2rem; font-
 .score-actions { margin-top: 20px; display: flex; gap: 12px; align-items: center; }
 
 /* Team setup grid */
-.team-input-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; margin-bottom: 8px; align-items: center; }
-.team-input-row select { width: auto; }
+.team-input-row { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; margin-bottom: 8px; align-items: center; }
 
 /* Admin match list */
 .match-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 6px; }

@@ -65,4 +65,23 @@ function generateRoundRobin(teamIds) {
   return pairs;
 }
 
-module.exports = { getMatchWinner, calculateStandings, generateRoundRobin };
+// Circle method: returns rounds where each team plays exactly once per round.
+// teamIds.length must be even.
+function generateRoundsByRound(teamIds) {
+  const n = teamIds.length;
+  if (n < 2) return [];
+  const fixed = teamIds[0];
+  const rotating = teamIds.slice(1);
+  const rounds = [];
+  for (let r = 0; r < n - 1; r++) {
+    const round = [[fixed, rotating[0]]];
+    for (let i = 1; i < n / 2; i++) {
+      round.push([rotating[i], rotating[n - 1 - i]]);
+    }
+    rounds.push(round);
+    rotating.push(rotating.shift());
+  }
+  return rounds;
+}
+
+module.exports = { getMatchWinner, calculateStandings, generateRoundRobin, generateRoundsByRound };

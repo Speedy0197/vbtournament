@@ -12,12 +12,15 @@
 
   <% for (let i = 0; i < 12; i++) { const t = teams[i] || {}; %>
   <div class="team-input-row">
+    <% if (t.icon_path && t.icon_path.startsWith('/')) { %>
+    <img src="<%= t.icon_path %>" alt="" class="team-icon">
+    <% } else if (t.icon_path) { %>
+    <span class="team-icon-placeholder"><%= t.icon_path %></span>
+    <% } else { %>
+    <span class="team-icon-placeholder" style="background:var(--border);color:var(--muted)"><%= t.name ? t.name.charAt(0).toUpperCase() : (i + 1) %></span>
+    <% } %>
     <input type="text" name="name" placeholder="Team <%= i + 1 %> name" value="<%= t.name || '' %>">
     <input type="hidden" name="emoji" value="<%= t.icon_path && !t.icon_path.startsWith('/') ? t.icon_path : '' %>">
-    <select name="group">
-      <option value="A" <%= (t.group_name || (i < 6 ? 'A' : 'B')) === 'A' ? 'selected' : '' %>>Group A</option>
-      <option value="B" <%= (t.group_name || (i < 6 ? 'A' : 'B')) === 'B' ? 'selected' : '' %>>Group B</option>
-    </select>
     <% if (t.id) { %>
     <form method="POST" action="/admin/team/<%= t.id %>/icon" enctype="multipart/form-data" style="margin:0">
       <label class="btn btn-sm btn-secondary" style="cursor:pointer">
@@ -25,6 +28,8 @@
         <input type="file" name="icon" accept="image/*" onchange="this.form.submit()" style="display:none">
       </label>
     </form>
+    <% } else { %>
+    <span></span>
     <% } %>
   </div>
   <% } %>

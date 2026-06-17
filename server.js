@@ -149,16 +149,15 @@ app.get('/admin/setup', requireAdmin, (req, res) => {
 
 app.post('/admin/setup', requireAdmin, (req, res) => {
   const names  = [].concat(req.body.name  || []);
-  const groups = [].concat(req.body.group || []);
   const emojis = [].concat(req.body.emoji || []);
   const validTeams = names
-    .map((name, i) => ({ name: name.trim(), group: groups[i], emoji: emojis[i] || null }))
+    .map((name, i) => ({ name: name.trim(), emoji: emojis[i] || null }))
     .filter(t => t.name.length > 0);
   try {
     for (const f of fs.readdirSync(uploadsDir)) fs.unlinkSync(path.join(uploadsDir, f));
   } catch (e) {}
   db.clearAll();
-  for (const t of validTeams) db.insertTeam(t.name, t.group, t.emoji);
+  for (const t of validTeams) db.insertTeam(t.name, 'A', t.emoji);
   res.redirect('/admin/setup?saved=1');
 });
 
@@ -191,18 +190,27 @@ app.get('/admin/print', requireAdmin, (req, res) => {
 
 // ── Schedule Generation ───────────────────────────────────────────────────────
 app.post('/admin/generate-schedule', requireAdmin, (req, res) => {
-  const teams  = db.getTeams();
-  const groupA = teams.filter(t => t.group_name === 'A');
-  const groupB = teams.filter(t => t.group_name === 'B');
-  db.clearMatches();
-  let court = 1;
-  for (const [t1, t2] of tournament.generateRoundRobin(groupA.map(t => t.id))) {
-    db.insertMatch('group', court, t1, t2, null);
-    court = court === 2 ? 1 : 2;
+  const teams = db.getTeams();
+  const shuffled = [...teams].sort(() => Math.random() - 0.5);
+  const half = Math.floor(shuffled.length / 2);
+  for (let i = 0; i < shuffled.length; i++) {
+    db.updateTeamGroup(shuffled[i].id, i < half ? 'A' : 'B');
   }
-  for (const [t1, t2] of tournament.generateRoundRobin(groupB.map(t => t.id))) {
-    db.insertMatch('group', court, t1, t2, null);
-    court = court === 2 ? 1 : 2;
+  db.clearMatches();
+  const updatedTeams = db.getTeams();
+  const groupA = updatedTeams.filter(t => t.group_name === 'A');
+  const groupB = updatedTeams.filter(t => t.group_name === 'B');
+  const roundsA = tournament.generateRoundsByRound(groupA.map(t => t.id));
+  const roundsB = tournament.generateRoundsByRound(groupB.map(t => t.id));
+  const numRounds = Math.max(roundsA.length, roundsB.length);
+  for (let r = 0; r < numRounds; r++) {
+    const mA = roundsA[r] || [];
+    const mB = roundsB[r] || [];
+    const len = Math.max(mA.length, mB.length);
+    for (let i = 0; i < len; i++) {
+      if (mA[i]) db.insertMatch('group', 1, mA[i][0], mA[i][1], null);
+      if (mB[i]) db.insertMatch('group', 2, mB[i][0], mB[i][1], null);
+    }
   }
   res.redirect('/admin');
 });
@@ -286,20 +294,7 @@ app.post('/admin/test/seed', requireAdmin, (req, res) => {
   const selected = pool.slice(0, 12);
 
   for (let i = 0; i < 12; i++) {
-    db.insertTeam(selected[i].name, i < 6 ? 'A' : 'B', selected[i].emoji);
-  }
-
-  const teams = db.getTeams();
-  const groupA = teams.filter(t => t.group_name === 'A');
-  const groupB = teams.filter(t => t.group_name === 'B');
-  let court = 1;
-  for (const [t1, t2] of tournament.generateRoundRobin(groupA.map(t => t.id))) {
-    db.insertMatch('group', court, t1, t2, null);
-    court = court === 2 ? 1 : 2;
-  }
-  for (const [t1, t2] of tournament.generateRoundRobin(groupB.map(t => t.id))) {
-    db.insertMatch('group', court, t1, t2, null);
-    court = court === 2 ? 1 : 2;
+    db.insertTeam(selected[i].name, 'A', selected[i].emoji);
   }
 
   res.redirect('/admin/test');

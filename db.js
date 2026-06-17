@@ -108,6 +108,9 @@ const deleteSetsForMatch = (matchId) =>
 const updateTeamIcon = (id, iconPath) =>
   db.prepare('UPDATE teams SET icon_path = ? WHERE id = ?').run(iconPath, id);
 
+const updateTeamGroup = (id, group) =>
+  db.prepare('UPDATE teams SET group_name = ? WHERE id = ?').run(group, id);
+
 module.exports = {
   getTeams,
   insertTeam,
@@ -120,4 +123,5 @@ module.exports = {
   upsertSet,
   deleteSetsForMatch,
   updateTeamIcon,
+  updateTeamGroup,
 };
