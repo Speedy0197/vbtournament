@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Standings – Petrus Volleyball Turnier</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #fff; color: #000; padding: 24px; }
+    h1 { font-size: 1.4rem; font-weight: 700; margin-bottom: 4px; }
+    .meta { font-size: 0.8rem; color: #555; margin-bottom: 24px; }
+    .section { margin-bottom: 28px; }
+    h2 { font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #444; border-bottom: 2px solid #000; padding-bottom: 4px; margin-bottom: 12px; }
+    .groups { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+    h3 { font-size: 0.9rem; font-weight: 700; margin-bottom: 6px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th { text-align: left; padding: 5px 8px; border-bottom: 1px solid #000; font-weight: 600; }
+    td { padding: 6px 8px; border-bottom: 1px solid #ddd; }
+    .rank { width: 28px; text-align: center; }
+    .advance td { font-weight: 700; }
+    .bracket-item { padding: 5px 0; border-bottom: 1px solid #ddd; font-size: 0.85rem; }
+    .bracket-item:last-child { border-bottom: none; }
+    .bracket-label { font-size: 0.72rem; color: #666; }
+    .no-print { margin-top: 28px; }
+    button { padding: 8px 16px; cursor: pointer; font-size: 0.85rem; }
+    @media print { .no-print { display: none; } }
+  </style>
+</head>
+<body>
+  <h1>🏐 Petrus Volleyball Turnier</h1>
+  <p class="meta">Printed: <%= new Date().toLocaleString('de-DE') %></p>
+
+  <div class="section">
+    <h2>Group Standings</h2>
+    <div class="groups">
+      <% ['A', 'B'].forEach(g => { %>
+      <div>
+        <h3>Group <%= g %></h3>
+        <table>
+          <thead>
+            <tr>
+              <th class="rank">#</th>
+              <th>Team</th>
+              <th>W</th>
+              <th>L</th>
+              <th>Sets</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% (standings[g] || []).forEach((s, i) => { %>
+            <tr class="<%= i < 2 ? 'advance' : '' %>">
+              <td class="rank"><%= i + 1 %></td>
+              <td><%= s.team.name %></td>
+              <td><%= s.wins %></td>
+              <td><%= s.losses %></td>
+              <td><%= s.setsWon %>–<%= s.setsLost %></td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+      <% }); %>
+    </div>
+  </div>
+
+  <% if (bracketMatches.length > 0) { %>
+  <div class="section">
+    <h2>Bracket</h2>
+    <% for (const m of bracketMatches) { %>
+    <div class="bracket-item">
+      <div class="bracket-label"><%= m.label || m.phase.replace(/_/g, ' ').toUpperCase() %></div>
+      <div>
+        <%= m.team1_name %> vs <%= m.team2_name %>
+        <% if (m.sets && m.sets.length > 0) { %>
+        &nbsp;(<%= m.sets.map(s => `${s.team1_score}–${s.team2_score}`).join(' | ') %>)
+        <% } %>
+        <% if (m.status === 'done') { %>
+        &nbsp;✓
+        <% } %>
+      </div>
+    </div>
+    <% } %>
+  </div>
+  <% } %>
+
+  <div class="no-print">
+    <button onclick="window.close()">Close tab</button>
+  </div>
+
+  <script>window.print();</script>
+</body>
+</html>
