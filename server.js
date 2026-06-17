@@ -181,6 +181,13 @@ app.get('/admin', requireAdmin, (req, res) => {
   res.render('admin/index', { teams, groupMatches, bracketMatches, standings, allGroupDone });
 });
 
+// ── Print ─────────────────────────────────────────────────────────────────────
+app.get('/admin/print', requireAdmin, (req, res) => {
+  const { matches, standings } = buildState();
+  const bracketMatches = matches.filter(m => m.phase !== 'group');
+  res.render('admin/print', { standings, bracketMatches });
+});
+
 // ── Schedule Generation ───────────────────────────────────────────────────────
 app.post('/admin/generate-schedule', requireAdmin, (req, res) => {
   const teams  = db.getTeams();
