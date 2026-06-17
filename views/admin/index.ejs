@@ -24,7 +24,59 @@
 
 <% if (teams.length === 0) { %>
 <div class="alert alert-info">No teams yet. <a href="/admin/setup">Add teams</a> to get started.</div>
-<% } else { %>
+<% } %>
+
+<% if (groupMatches.length > 0) { %>
+<details <%= allGroupDone ? '' : 'open' %> style="margin-bottom:24px">
+  <summary class="section-title" style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px">
+    Standings <span style="font-size:0.75rem;color:var(--muted)"><%= allGroupDone ? '(group phase complete)' : '' %></span>
+  </summary>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:10px">
+    <% ['A', 'B'].forEach(g => { %>
+    <div>
+      <p style="font-weight:600;margin-bottom:8px;color:var(--muted)">Group <%= g %></p>
+      <table class="standings-table">
+        <thead><tr><th>Team</th><th>W</th><th>L</th></tr></thead>
+        <tbody>
+          <% (standings[g] || []).forEach((s, i) => { %>
+          <tr class="<%= i < 2 ? 'advance' : (i < 4 ? 'silver-zone' : '') %>">
+            <td style="display:flex;align-items:center;gap:8px">
+              <% if (s.team.icon_path && s.team.icon_path.startsWith('/')) { %><img src="<%= s.team.icon_path %>" alt="" class="team-icon"><% } else if (s.team.icon_path) { %><span class="team-icon-placeholder"><%= s.team.icon_path %></span><% } else { %><span class="team-icon-placeholder"><%= s.team.name.charAt(0).toUpperCase() %></span><% } %>
+              <%= s.team.name %>
+            </td>
+            <td><%= s.wins %></td>
+            <td><%= s.losses %></td>
+          </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+    <% }); %>
+  </div>
+</details>
+<% } %>
+
+<% if (groupMatches.length > 0) { %>
+<details <%= allGroupDone ? '' : 'open' %> style="margin-bottom:24px">
+  <summary class="section-title" style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px">
+    Group Stage <span style="font-size:0.75rem;color:var(--muted)"><%= allGroupDone ? '(complete)' : '' %></span>
+  </summary>
+  <div style="margin-top:10px">
+    <% for (const m of groupMatches) { %>
+    <%- include('../_match_row', { m }) %>
+    <% } %>
+  </div>
+</details>
+<% } %>
+
+<% if (bracketMatches.length > 0) { %>
+<p class="section-title">Bracket</p>
+<% for (const m of bracketMatches) { %>
+<%- include('../_match_row', { m }) %>
+<% } %>
+<% } %>
+
+<% if (teams.length > 0) { %>
 <p class="section-title">Teams</p>
 <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:24px">
   <% for (const t of teams) { %>
@@ -40,54 +92,8 @@
       <div style="font-weight:600;font-size:0.9rem"><%= t.name %></div>
       <div style="font-size:0.75rem;color:var(--muted)">Gruppe <%= t.group_name %></div>
     </div>
-    <form method="POST" action="/admin/team/<%= t.id %>/icon" enctype="multipart/form-data">
-      <label class="btn btn-sm btn-secondary" style="cursor:pointer">
-        📷 Bild
-        <input type="file" name="icon" accept="image/*" onchange="this.form.submit()" style="display:none">
-      </label>
-    </form>
   </div>
   <% } %>
 </div>
-<% } %>
-
-<% if (groupMatches.length > 0) { %>
-<p class="section-title">Group Stage</p>
-<% for (const m of groupMatches) { %>
-<%- include('../_match_row', { m }) %>
-<% } %>
-<% } %>
-
-<% if (groupMatches.length > 0) { %>
-<p class="section-title">Standings</p>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
-  <% ['A', 'B'].forEach(g => { %>
-  <div>
-    <p style="font-weight:600;margin-bottom:8px;color:var(--muted)">Group <%= g %></p>
-    <table class="standings-table">
-      <thead><tr><th>Team</th><th>W</th><th>L</th></tr></thead>
-      <tbody>
-        <% (standings[g] || []).forEach((s, i) => { %>
-        <tr class="<%= i < 2 ? 'advance' : (i < 4 ? 'silver-zone' : '') %>">
-          <td style="display:flex;align-items:center;gap:8px">
-            <% if (s.team.icon_path && s.team.icon_path.startsWith('/')) { %><img src="<%= s.team.icon_path %>" alt="" class="team-icon"><% } else if (s.team.icon_path) { %><span class="team-icon-placeholder"><%= s.team.icon_path %></span><% } else { %><span class="team-icon-placeholder"><%= s.team.name.charAt(0).toUpperCase() %></span><% } %>
-            <%= s.team.name %>
-          </td>
-          <td><%= s.wins %></td>
-          <td><%= s.losses %></td>
-        </tr>
-        <% }); %>
-      </tbody>
-    </table>
-  </div>
-  <% }); %>
-</div>
-<% } %>
-
-<% if (bracketMatches.length > 0) { %>
-<p class="section-title">Bracket</p>
-<% for (const m of bracketMatches) { %>
-<%- include('../_match_row', { m }) %>
-<% } %>
 <% } %>
 <%- include('../_footer') %>

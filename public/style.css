@@ -29,6 +29,7 @@ nav { display: flex; gap: 16px; font-size: 0.9rem; }
 main { max-width: 900px; margin: 0 auto; padding: 20px 16px; }
 .page-title { font-size: 1.4rem; font-weight: 700; margin-bottom: 20px; }
 .section-title { font-size: 1rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 24px 0 10px; }
+details > summary.section-title { margin: 0; }
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 @media (max-width: 600px) { .grid-2 { grid-template-columns: 1fr; } }
 

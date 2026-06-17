@@ -18,6 +18,14 @@
       <option value="A" <%= (t.group_name || (i < 6 ? 'A' : 'B')) === 'A' ? 'selected' : '' %>>Group A</option>
       <option value="B" <%= (t.group_name || (i < 6 ? 'A' : 'B')) === 'B' ? 'selected' : '' %>>Group B</option>
     </select>
+    <% if (t.id) { %>
+    <form method="POST" action="/admin/team/<%= t.id %>/icon" enctype="multipart/form-data" style="margin:0">
+      <label class="btn btn-sm btn-secondary" style="cursor:pointer">
+        📷 Bild
+        <input type="file" name="icon" accept="image/*" onchange="this.form.submit()" style="display:none">
+      </label>
+    </form>
+    <% } %>
   </div>
   <% } %>
 
