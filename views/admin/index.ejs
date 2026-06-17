@@ -76,24 +76,4 @@
 <% } %>
 <% } %>
 
-<% if (teams.length > 0) { %>
-<p class="section-title">Teams</p>
-<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:24px">
-  <% for (const t of teams) { %>
-  <div style="display:flex;align-items:center;gap:12px;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius)">
-    <% if (t.icon_path && t.icon_path.startsWith('/')) { %>
-    <img src="<%= t.icon_path %>" alt="<%= t.name %>" class="team-icon team-icon-lg">
-    <% } else if (t.icon_path) { %>
-    <span class="team-icon-placeholder team-icon-lg"><%= t.icon_path %></span>
-    <% } else { %>
-    <span class="team-icon-placeholder team-icon-lg"><%= t.name.charAt(0).toUpperCase() %></span>
-    <% } %>
-    <div style="flex:1">
-      <div style="font-weight:600;font-size:0.9rem"><%= t.name %></div>
-      <div style="font-size:0.75rem;color:var(--muted)">Gruppe <%= t.group_name %></div>
-    </div>
-  </div>
-  <% } %>
-</div>
-<% } %>
 <%- include('../_footer') %>

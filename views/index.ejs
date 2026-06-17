@@ -126,7 +126,7 @@ for (const m of matches.filter(x => x.status === 'pending')) {
 <% } %>
 <% } %>
 
-<% const doneGroupMatches = matches.filter(m => m.phase === 'group' && m.status === 'done'); %>
+<% const doneGroupMatches = matches.filter(m => m.phase === 'group' && m.status === 'done').reverse(); %>
 <% if (doneGroupMatches.length > 0) { %>
 <p class="section-title">Results</p>
 <% for (const m of doneGroupMatches) { %>
