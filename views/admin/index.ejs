@@ -5,6 +5,7 @@
 </div>
 
 <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px">
+  <a href="/admin/print" target="_blank" class="btn btn-sm btn-secondary">🖨️ Print Standings</a>
   <a href="/admin/setup" class="btn btn-sm">⚙️ Edit Teams</a>
   <% if (teams.length > 0 && groupMatches.length === 0) { %>
   <form method="POST" action="/admin/generate-schedule" style="display:inline">
