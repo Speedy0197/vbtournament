@@ -5,7 +5,7 @@ body{background:white;color:#17273d}main{max-width:1100px;padding:24px}.print-he
 </style></head><body><main>
 <header class="print-head"><div><h1>Petrus Volleyball Turnier</h1><p>Schedule &amp; results · Printed <%= new Date().toLocaleString('de-DE',{timeZone:'Europe/Berlin'}) %></p></div><div class="no-print"><button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button> <a class="btn btn-secondary btn-sm" href="/admin">Back</a></div></header>
 <%- include('../_standings',{rows:standings.A,caption:'League standings',offset:0,placement:false}) %>
-<section class="print-section"><h2>League schedule and results</h2><div class="print-table-wrap"><table class="print-table"><thead><tr><th>Time</th><th>Court</th><th>Match</th><th>Referee team:</th><th>Result</th></tr></thead><tbody>
+<section class="print-section"><h2>League schedule and results</h2><p>Estimated times · 5-minute breaks. Check live scores for updated times.</p><div class="print-table-wrap"><table class="print-table"><thead><tr><th>Time</th><th>Court</th><th>Match</th><th>Referee team:</th><th>Result</th></tr></thead><tbody>
 <% for(const m of groupMatches){ %><tr><td class="print-time"><%= ui.time(m) %></td><td><%= m.court %></td><td>
 <% for(const side of [1,2]){const t=ui.team(m,side); %><div class="print-team"><% if(t.icon_path&&t.icon_path.startsWith('/')){ %><img src="<%= t.icon_path %>" alt="" class="print-logo"><% } %><%= t.name %></div><% } %>
 </td><td><%= ui.referee(m).name %></td><td><%- include('../_score',{m}) %></td></tr><% } %>

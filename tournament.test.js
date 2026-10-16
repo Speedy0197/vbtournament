@@ -191,7 +191,7 @@ for (const [count, league, total, finish] of [[6,15,19,'15:45'],[7,21,27,'16:45'
     assert.equal(mode.groupMatchCount,league);
     assert.equal(mode.totalMatches,total);
     assert.equal(mode.minTeams,6); assert.equal(mode.maxTeams,7);
-    assert.equal(mode.timing.groupSlotMinutes,20);
+    assert.equal(mode.timing.groupSlotMinutes,25);
     assert.equal(mode.timing.finish,finish);
     assert.equal(mode.timing.fitsWindow,true);
     assert.deepEqual(TOURNAMENT_RULES,{setTarget:25,decidingSetTarget:15,matchMinutes:40,playoffSetsToWin:2});
@@ -199,6 +199,46 @@ for (const [count, league, total, finish] of [[6,15,19,'15:45'],[7,21,27,'16:45'
 }
 test('event schedule accepts only six or seven teams',()=>{
   for(const count of [0,5,8,12]) assert.throws(()=>generateLeagueSchedule(Array.from({length:count},(_,i)=>i+1)));
+});
+
+for (const [count, end] of [[6,'13:15'],[7,'14:30']]) {
+  test(count + '-team league leaves five minutes between synchronized rounds', () => {
+    const matches=generateLeagueSchedule(Array.from({length:count},(_,i)=>i+1));
+    assert.match(matches[0].label,/10:00–10:20/);
+    assert.match(matches[1].label,/10:00–10:20/);
+    assert.match(matches[2].label,/10:25–10:45/);
+    assert.match(matches.at(-1).label,new RegExp('–'+end));
+    assert.ok(matches.every(m=>m.estimated_minutes===20&&m.timed_periods===2));
+  });
+}
+
+test('adaptive league times wait for both results and carry delays into all remaining rounds', () => {
+  const {applyLeagueTiming}=require('./tournament');
+  const matches=generateLeagueSchedule([1,2,3,4,5,6,7]).map((m,i)=>({...m,id:i+1,phase:'group',status:'pending',sets:[]}));
+  const original=structuredClone(matches);
+  matches[0].status='done'; matches[0].completed_at='2026-10-17T08:21:00.000Z';
+  assert.match(applyLeagueTiming(matches)[2].label,/10:25–10:45/);
+  matches[1].status='done'; matches[1].completed_at='2026-10-17T08:23:30.000Z';
+  const timed=applyLeagueTiming(matches);
+  assert.match(timed[2].label,/10:29–10:49/);
+  assert.equal(timed[2].label,timed[3].label);
+  assert.match(timed[4].label,/10:54–11:14/);
+  assert.match(timed.at(-1).label,/14:14–14:34/);
+  assert.deepEqual(matches.slice(2),original.slice(2),'projecting times must not mutate stored matches');
+  matches[2].status='done'; matches[2].completed_at='2026-10-17T08:56:00.000Z';
+  matches[3].status='done'; matches[3].completed_at='2026-10-17T08:58:00.000Z';
+  assert.match(applyLeagueTiming(matches)[4].label,/11:03–11:23/);
+});
+
+test('legacy results without a finish time and out-of-order results keep safe league estimates', () => {
+  const {applyLeagueTiming}=require('./tournament');
+  const matches=generateLeagueSchedule([1,2,3,4,5,6]).map((m,i)=>({...m,id:i+1,phase:'group',status:'pending',sets:[]}));
+  matches[0].status=matches[1].status='done';
+  matches[4].status=matches[5].status='done';
+  matches[4].completed_at=matches[5].completed_at='2026-10-17T15:00:00.000Z';
+  const timed=applyLeagueTiming(matches);
+  assert.match(timed[2].label,/10:25–10:45/);
+  assert.match(timed[6].label,/11:15–11:35/);
 });
 
 test('timed league counts draws, one-point wins, and only completed games', () => {

@@ -68,6 +68,11 @@ if (!matchColumns.has('referee_team_id')) {
   db.transaction(() => db.exec(sql))();
 }
 
+if (!matchColumns.has('completed_at')) {
+  const sql = require('node:fs').readFileSync(path.join(__dirname, 'migrations/0006_adaptive_timing.sql'), 'utf8');
+  db.transaction(() => db.exec(sql))();
+}
+
 const getScoringRules = () => ({ ...require('./tournament').TOURNAMENT_RULES });
 
 const getSetsForMatchStmt = db.prepare(
@@ -228,7 +233,8 @@ const saveScore = db.transaction((id, sets, status, expectedMatch = null) => {
   if (locked) return false;
   deleteSetsForMatch(id);
   for (const set of sets) upsertSet(id, set.n, set.t1, set.t2);
-  updateMatchStatus(id, status);
+  db.prepare("UPDATE matches SET status=?, completed_at=CASE WHEN ?='done' THEN coalesce(completed_at,?) ELSE completed_at END WHERE id=?")
+    .run(status,status,new Date().toISOString(),id);
   return true;
 });
 

@@ -166,6 +166,7 @@ export function createDatabase(database) {
       ]);
     },
     async saveScore(id, sets, status, expectedMatch=null) {
+      const completedAt = new Date().toISOString();
       if(expectedMatch){
         const state=await this.getFullState(),actual=state.matches.find(m=>m.id===id);
         if(corrections.matchSnapshot(actual)!==corrections.matchSnapshot(expectedMatch)||actual.status==='done'
@@ -174,7 +175,7 @@ export function createDatabase(database) {
         return withSnapshot('score_guard',state,(guard,args)=>[
           stmt('DELETE FROM sets WHERE match_id=? AND '+guard,id,...args),
           ...sets.map(s=>stmt('INSERT INTO sets(match_id,set_number,team1_score,team2_score) SELECT ?,?,?,? WHERE '+guard,id,s.n,s.t1,s.t2,...args)),
-          stmt('UPDATE matches SET status=? WHERE id=? AND '+guard,status,id,...args),
+          stmt("UPDATE matches SET status=?, completed_at=CASE WHEN ?='done' THEN coalesce(completed_at,?) ELSE completed_at END WHERE id=? AND "+guard,status,status,completedAt,id,...args),
         ]);
       }
       // Every statement shares this guard inside one atomic D1 batch. Once the
@@ -191,7 +192,7 @@ export function createDatabase(database) {
         stmt('DELETE FROM sets WHERE match_id = ? AND ' + editable, id, id),
         ...sets.map(set => stmt('INSERT INTO sets (match_id, set_number, team1_score, team2_score) SELECT ?, ?, ?, ? WHERE ' + editable,
           id, set.n, set.t1, set.t2, id)),
-        stmt('UPDATE matches SET status = ? WHERE id = ? AND ' + editable, status, id, id),
+        stmt("UPDATE matches SET status=?, completed_at=CASE WHEN ?='done' THEN coalesce(completed_at,?) ELSE completed_at END WHERE id=? AND " + editable, status, status, completedAt, id, id),
       ]);
       return result[result.length - 1].meta.changes > 0;
     },

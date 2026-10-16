@@ -1,6 +1,18 @@
 # Petrus Volleyball code and deployment handoff
 
-Prepared 16 October 2026 for continuing from a MacBook. The tournament is on 17 October 2026, Europe/Berlin. The application is implemented, tested and deployed; no feature work is currently outstanding.
+Prepared 16 October 2026 for continuing from a MacBook. The tournament is on 17 October 2026, Europe/Berlin. The five-minute-break/adaptive-timing update is implemented, tested and deployed; see the update below.
+
+# Latest deployed update · adaptive league timing
+
+The user requested five-minute breaks between league rounds and adaptive times after entering results. Both courts remain synchronized. A round's next start is projected five minutes after the later saved result, rounded up to the next minute and never earlier than the current round's 20-minute playing estimate. All following rounds and the overall finish estimate shift together. A longer break is reflected once the following round's results are saved; the app does not observe actual starts. Save results promptly, since delayed entry also delays the estimates. Corrections retain the original finish timestamp and do not move the timetable.
+
+Existing match IDs, pairings, referees, teams, logos and results are preserved. Timetables are projected on reads; adopting breaks does not require resetting/regenerating the schedule. New schedules also include the breaks. Seven-team league estimates run 10:00–14:30; six teams run 10:00–13:15. The scheduled breaks consume 50/35 minutes of the existing 65-minute allowance, leaving 15/30 minutes for later breaks and delays. The initial overall estimates remain 16:45/15:45.
+
+Migration `0006_adaptive_timing.sql` adds nullable `matches.completed_at`. SQLite applies it automatically on startup. D1 requires applying it before deploying the new Worker. First-time completed scores record the timestamp atomically with the result in both adapters. Existing historical results retain null timestamps and use planning estimates.
+
+Release verification: `npm test` (83 tests) and `npm run test:cloudflare` (37 tests) passed, including shared SQLite/D1 timing cases, compiled templates, legacy schedule adoption without writes, longer breaks, corrections, invalid/stale submissions and overall finish estimates after the final league result. Migration 0006 and Worker version `9dff8e41-5314-4e84-829d-7b1069fea100` were deployed on 16 October. Live HTTPS checks confirmed the five-minute gaps, 14:30 league finish and 16:45 overall planning estimate. All seven teams/logos and all 21 pending matches, pairings, referees and empty scores were preserved. Scores, login and QR routes returned 200. No Pages deployment was needed because public assets and the gateway did not change.
+
+Mac access checked: Node 24.14.0 is available and `npm ci` installed the locked dependencies. The user completed `npx wrangler login`, and `whoami` confirmed access to the configured account. This Mac successfully applied the production migration and deployed the Worker. The adaptive-timing source, migration, regression tests and release notes are versioned together in this repository.
 
 # Start here
 
@@ -12,7 +24,7 @@ Prepared 16 October 2026 for continuing from a MacBook. The tournament is on 17 
 - Pages gateway: https://petrus-volleyball.pages.dev/
 - Repository: https://github.com/Speedy0197/vbtournament
 
-The latest released application is published on the main branch of https://github.com/Speedy0197/vbtournament. Clone the repository to continue on the MacBook. The private ChatGPT handoff also retains a source snapshot captured before this GitHub publication. The release was developed from commit a0f39c1be4bdb8da6356ba955af78384b22d1d22.
+The released application's source is published on the main branch of https://github.com/Speedy0197/vbtournament, including the adaptive-timing update developed from commit aadd9e116fa2796d6723b92762192138ea763451. The private ChatGPT handoff also retains a source snapshot captured before the GitHub publication. The earlier UI release was developed from commit a0f39c1be4bdb8da6356ba955af78384b22d1d22.
 
 At the last live read-only check on 16 October, production had seven teams and 21 pending league matches, with no saved scores. All pairings were unique. Each team had six games and three referee duties, with no simultaneous player/referee conflicts. The demo results described below exist only locally. Re-read /api/state before treating these counts as current on tournament day.
 
@@ -20,15 +32,15 @@ At the last live read-only check on 16 October, production had seven teams and 2
 
 The seven registered teams are Grüne Gurken, Hochball, Halb Netz Halb Aus, Netzfetzer, Netzflüsterer, Blockwürstchen and Petrus Team 26. Preserve their existing IDs and uploaded logos.
 
-- Two courts, approximately seven hours. League slots start at 10:00 and are exactly 20 minutes: two independent 10-minute sets. There is no additional five-minute changeover in the final configuration.
+- Two courts, approximately seven hours. The league starts at 10:00; games have two independent 10-minute sets with a five-minute break between rounds. Remaining times adapt after both court results are saved.
 - Finish the current rally at the buzzer. Any lead wins a timed set; if tied, one deciding rally settles it. Start the next set at 0–0.
 - A league game can finish 2–0, 1–1 or 0–2. A win gives two league points; a draw gives one to each team. Rankings use league points, point difference, points scored, then stable team-ID order.
-- Seven teams play 21 league games in 11 slots, ending at 13:40. Every pair plays once.
+- Seven teams play 21 league games in 11 rounds, initially estimated to end at 14:30 including ten five-minute breaks. Every pair plays once.
 - The top four qualify. Court 1 has semifinal 1 (1st versus 4th), semifinal 2 (2nd versus 3rd), then the final, sequentially.
 - All semifinals, the final and placement games are first to TWO set wins. Sets one and two are to 25; a deciding third set is to 15. Win by two, including extended scores. These games cannot draw.
 - On Court 2, the bottom three play a fresh three-match round robin for places 5–7. League results are not carried over. Placement ranking uses the existing match-points and rally-point tie breakers.
 - There is no third-place match. The semifinal losers share third place: final ranks are 1, 2, =3, =3, 5, 6, 7.
-- The later set-based games have 40-minute planning estimates, not hard time limits. The seven-team finish estimate is 16:45 including 65 minutes reserved for breaks and delays.
+- The later set-based games have 40-minute planning estimates, not hard time limits. The initial seven-team finish estimate is 16:45: 50 minutes of league breaks and 15 more minutes for later breaks and delays. League delays shift this estimate.
 
 There are no public mode banners or detailed rule paragraphs, and no dynamic game-mode or playoff-rule controls. Earlier historical plans about groups, 25-minute slots or configurable formats are superseded.
 
@@ -75,7 +87,7 @@ Public scores automatically refresh every two minutes while the tab is visible, 
 | scripts/build-cloudflare.mjs | Compiles strict EJS templates and bundles the Worker with esbuild; copies only approved public assets. |
 | scripts/build-domain-gateway.mjs | Builds the small Pages gateway and copies only style.css/client.js. |
 | cloudflare/domain-gateway/ | Pages _worker.js and its separate wrangler.jsonc. |
-| migrations/ | Applied migrations 0001_initial through 0005_referee_teams. |
+| migrations/ | Production has 0001_initial through 0006_adaptive_timing. |
 | *.test.js, *.test.mjs and test-support/ | Local, D1/Worker, gateway and shared correction tests. |
 | DEPLOYMENT.md | Longer operational history and release notes. This handoff summarizes the latest state. |
 
@@ -89,7 +101,7 @@ The public /api/state endpoint is read-only and returns teams, matches with sets
 | --- | --- |
 | Account ID | 0e617072989f0ec7b25a41cbb3cbff41 |
 | Worker/service name | petrus-volleyball |
-| Worker version released 16 October | d63bccc7-1450-44f1-bb2b-8c20923e0301 |
+| Worker version released 16 October | 9dff8e41-5314-4e84-829d-7b1069fea100 |
 | D1 binding | DB |
 | D1 database name | petrus-volleyball |
 | D1 database ID | b32936df-779b-4dbd-8e65-290ddae0236d |
@@ -112,7 +124,7 @@ npm run deploy:cloudflare
 npm run deploy:domain
 ```
 
-The second deploy is required when CSS, client.js or gateway code changes, because the custom domain serves its own asset copies. Running both scripts is the straightforward complete release. The latest UI release needed no migration. Do not create a replacement D1 database, replace resources or reapply/reset production data as part of routine deployment.
+Migration 0006 is already applied in production. On any other existing environment, run `npx wrangler d1 migrations apply petrus-volleyball --remote` before deploying code that needs it; this adds the nullable timestamp column without resetting data. The second deploy is required when CSS, client.js or gateway code changes, because the custom domain serves its own asset copies. The timing update changed Worker templates and server code, so it did not require a Pages asset deployment. Do not create a replacement D1 database, replace resources or reapply/reset production data as part of routine deployment.
 
 Pages commands must use the dedicated cloudflare/domain-gateway configuration. The deploy:domain script already supplies --cwd, --project-name and --branch main. Running a Pages project-create command from the root previously caused Wrangler to delegate to a Worker deployment. The Pages project already exists. Do not add account_id to the Pages config.
 
@@ -145,7 +157,7 @@ Opening this handoff gives context; it does not connect another chat to the Wind
 
 # Verification and current limits
 
-Latest full verification: 100 tests passed, comprising 71 local tests and 29 Cloudflare/gateway tests. Coverage includes complete six- and seven-team events, deciding third sets, rejection of placement draws/incomplete scores, referee scheduling, atomic setup/withdrawal, correction dependencies, stale forms/writers, rollback, compiled views, uploads, restart persistence, final-standings completion gating and corrected-final winner updates.
+Latest full verification: 120 tests passed, comprising 83 local tests and 37 Cloudflare/gateway tests. Coverage includes adaptive synchronized league times, longer breaks and unchanged correction timestamps, complete six- and seven-team events, deciding third sets, rejection of placement draws/incomplete scores, referee scheduling, atomic setup/withdrawal, correction dependencies, stale forms/writers, rollback, compiled views, uploads, restart persistence, final-standings completion gating and corrected-final winner updates.
 
 After release, read-only checks confirmed HTTPS 200 for scores, QR, login and state; new CSS on the custom domain; and production state exactly unchanged. Earlier rehearsals also covered every possible missing-team fallback. Desktop and phone layouts were checked during UI work; actual venue connectivity and the organiser's own phone remain practical checks.
 

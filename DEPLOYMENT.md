@@ -2,7 +2,24 @@
 
 The fixed tournament for **17 October 2026** is live at [volleyball.florian-zug.de](https://volleyball.florian-zug.de). Admin: [/admin](https://volleyball.florian-zug.de/admin). QR code: [/qr](https://volleyball.florian-zug.de/qr). The original Workers address and [Pages gateway](https://petrus-volleyball.pages.dev) remain available.
 
-Worker version: `d63bccc7-1450-44f1-bb2b-8c20923e0301`, deployed 16 October 2026. Migrations 0001–0005 are applied. This release requires no new migration.
+Worker version: `9dff8e41-5314-4e84-829d-7b1069fea100`, deployed 16 October 2026. Migrations 0001–0006 are applied.
+
+## Latest release · five-minute breaks and adaptive timing
+
+The user approved five-minute breaks between league rounds. The deployed update projects the next round five minutes after both court results are saved, using the later timestamp and retaining at least 20 minutes of play per round. Longer breaks carry forward after the following round is scored. Result corrections keep their original timestamp. The public page, Admin, score entry, print and API use the same projected timetable; readings never rebuild pairings or modify stored matches.
+
+Initial league finish estimates are 14:30 for seven teams and 13:15 for six. The existing 65-minute allowance now includes the 50/35 minutes of scheduled league breaks, leaving 15/30 minutes of additional reserve. Initial overall finish estimates remain 16:45/15:45 and shift with league delays.
+
+Verified before deployment: 83 Node/SQLite tests and 37 Cloudflare/D1/gateway tests passed. The user signed in on this Mac, and migration 0006 and the Worker were deployed successfully. Live verification confirmed the five-minute gaps, 14:30 league finish, 16:45 overall planning estimate, HTTPS 200 for scores/login/QR and all seven logos. Existing team IDs, match IDs, pairings, referees, rules, statuses and scores were identical before and after deployment: seven teams, 21 pending matches, no saved sets.
+
+The production deployment used:
+
+```sh
+npx wrangler d1 migrations apply petrus-volleyball --remote
+npm run deploy:cloudflare
+```
+
+Migration 0006 adds nullable `matches.completed_at` and preserves existing results. Do not regenerate the live schedule. No CSS/client.js/gateway assets changed, so no Pages deploy was needed. The adaptive-timing source, migration, regression tests and release notes are versioned together in this repository. The release history below describes the previously deployed timetable.
 
 ## Tournament format
 

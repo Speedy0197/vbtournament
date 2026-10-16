@@ -4,6 +4,7 @@
 <% if(error){ %><div class="alert alert-error" role="alert"><%= error %></div><% } %>
 <% if(finished){ %><%- include('../_final_standings',{finished}) %><% } %>
 <% if(!finished){ %><div class="admin-progress"><%= groupMatches.filter(m=>m.status==='done').length %> of <%= groupMatches.length %> league games completed</div><% } %>
+<% if(groupMatches.some(m=>m.status!=='done')){ %><p class="help">Estimated times · 5-minute breaks. Save both court results promptly to update the next round together.</p><% } %>
 <% if(courtMatches.length){ %><div class="courts"><% for(const m of courtMatches){ %><%- include('../_court',{m,admin:true,allMatches}) %><% } %></div><% }else{ %><div class="empty"><% if(allMatches.length){ %>All scheduled games have results. Completed games can be corrected below.<% }else{ %>No games scheduled. <a href="/admin/setup">Open tournament setup</a> or generate the schedule below.<% } %></div><% } %>
 <% if(awaiting.length){ %><section aria-labelledby="awaiting-results"><div class="sectionhead"><h2 id="awaiting-results">Awaiting results</h2><span>Ready games first</span></div><% for(const m of awaiting){ %><%- include('../_match_row',{m,admin:true,allMatches}) %><% } %></section><% } %>
 <% const semis=bracketMatches.filter(m=>m.phase==='gold_sf'); const needsBracket=allGroupDone&&(!semis.length||(semis.length===2&&semis.every(m=>m.status==='done')&&!bracketMatches.some(m=>m.phase==='gold_final'))); %>

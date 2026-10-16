@@ -26,7 +26,7 @@ npm test
 npm run test:cloudflare
 ```
 
-The latest release passed 100 tests across local SQLite, the compiled Cloudflare Worker/D1 and the custom-domain gateway. Integration tests use isolated emulator storage.
+The latest deployed update passed 120 tests across local SQLite, the compiled Cloudflare Worker/D1 and the custom-domain gateway. Integration tests use isolated emulator storage. Five-minute breaks and adaptive league timing are live; see HANDOFF.md for behavior and deployment details.
 
 ## Deploy an update
 
@@ -34,6 +34,7 @@ Authenticate with the Cloudflare account that owns the existing resources, then 
 
 ```sh
 npx wrangler login
+npx wrangler d1 migrations apply petrus-volleyball --remote
 npm run deploy:cloudflare
 npm run deploy:domain
 ```

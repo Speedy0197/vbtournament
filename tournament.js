@@ -200,16 +200,25 @@ function assignLeagueReferees(matches, teamIds) {
 }
 
 
-function getTournamentFormat(teamCount) {
+const LEAGUE_GAME_MINUTES = 20;
+const LEAGUE_BREAK_MINUTES = 5;
+const clock = minutes => String(Math.floor(minutes / 60)).padStart(2, '0') + ':' + String(minutes % 60).padStart(2, '0');
+const leagueLabel = (slot, start) => 'Slot ' + (slot + 1) + ' · ' + clock(start) + '–' + clock(start + LEAGUE_GAME_MINUTES) + ' · 2 × 10 min';
+
+function getTournamentFormat(teamCount, leagueEndMinutes = null) {
   const groupMatchCount = teamCount * (teamCount - 1) / 2;
   const placementTeams = Math.max(0, teamCount - 4);
   const placementMatchCount = placementTeams * (placementTeams - 1) / 2;
   const groupSlots = Math.ceil(groupMatchCount / 2);
-  const groupMinutes = groupSlots * 20;
+  const groupBreakMinutes = Math.max(0, groupSlots - 1) * LEAGUE_BREAK_MINUTES;
+  const groupMinutes = groupSlots * LEAGUE_GAME_MINUTES + groupBreakMinutes;
   const playMinutes = groupMinutes + 3 * TOURNAMENT_RULES.matchMinutes;
-  const reserveMinutes = 65;
-  const finishMinutes = 10 * 60 + playMinutes + reserveMinutes;
-  const finish = String(Math.floor(finishMinutes / 60)).padStart(2, '0') + ':' + String(finishMinutes % 60).padStart(2, '0');
+  // The existing 65-minute allowance already included breaks. Reserve the
+  // remaining allowance for playoffs/delays rather than counting breaks twice.
+  const reserveMinutes = Math.max(0, 65 - groupBreakMinutes);
+  const groupFinishMinutes = leagueEndMinutes ?? 10 * 60 + groupMinutes;
+  const finishMinutes = groupFinishMinutes + 3 * TOURNAMENT_RULES.matchMinutes + reserveMinutes;
+  const finish = clock(finishMinutes);
   return {
     id: 'league', name: 'League + semifinals + final', format: 'league',
     minTeams: 6, maxTeams: 7, groupSizes: [teamCount], groupMatchCount, playoffMatchCount: 3,
@@ -217,9 +226,9 @@ function getTournamentFormat(teamCount) {
     formatName: teamCount + ' teams — timed league + playoffs',
     description: 'One league, top four in the semifinals. Remaining teams play each other once on Court 2.',
     timing: {
-      matchMinutes: 40, groupSlots, groupSlotMinutes: 20, groupMinutes, playMinutes, reserveMinutes,
-      finish, fitsWindow: playMinutes + reserveMinutes <= 7 * 60,
-      description: groupSlots + ' league slots at 20 minutes, then three Court 1 matches estimated at 40 minutes each; Court 2 runs in parallel. With 65 minutes for breaks and delays, estimated finish ' + finish + '.',
+      matchMinutes: 40, groupSlots, groupSlotMinutes: 25, groupBreakMinutes, groupMinutes, playMinutes, reserveMinutes,
+      groupFinish: clock(groupFinishMinutes), finish, fitsWindow: finishMinutes <= 17 * 60,
+      description: groupSlots + ' league rounds at 20 minutes with 5-minute breaks, then three Court 1 matches estimated at 40 minutes each; Court 2 runs in parallel. With ' + reserveMinutes + ' additional minutes for breaks and delays, estimated finish ' + finish + '.',
     },
   };
 }
@@ -228,14 +237,46 @@ function generateLeagueSchedule(teamIds) {
   if (![6, 7].includes(teamIds.length)) throw new Error('This tournament requires six or seven teams.');
   const matches = assignLeagueReferees(generateRoundRobinSchedule(teamIds), teamIds);
   const courtSlots = { 1: 0, 2: 0 };
-  const clock = minutes => String(Math.floor(minutes / 60)).padStart(2, '0') + ':' + String(minutes % 60).padStart(2, '0');
   for (const match of matches) {
     const slot = courtSlots[match.court]++;
-    const start = 10 * 60 + slot * 20;
+    const start = 10 * 60 + slot * (LEAGUE_GAME_MINUTES + LEAGUE_BREAK_MINUTES);
     Object.assign(match, { scoring_format: 'timed', timed_periods: 2, estimated_minutes: 20,
-      label: 'Slot ' + (slot + 1) + ' · ' + clock(start) + '–' + clock(start + 20) + ' · 2 × 10 min' });
+      label: leagueLabel(slot, start) });
   }
   return matches;
 }
 
-module.exports = { TOURNAMENT_RULES, getTournamentFormat, generateLeagueSchedule, assignLeagueReferees, getFixedSetWinner, getTimedWinner, generateRoundRobinSchedule, getMatchWinner, calculateStandings, generateRoundRobin, generateRoundsByRound };
+// Both courts share a round: its next start can be anchored only once every
+// result in the round is saved. Missing legacy timestamps retain estimates.
+function applyLeagueTiming(matches) {
+  const projected = matches.map(match => ({ ...match }));
+  const rounds = [], counters = {};
+  for (const match of [...projected].sort((a,b) => a.id - b.id)) {
+    if (match.phase !== 'group' || match.scoring_format !== 'timed' || match.timed_periods !== 2) continue;
+    const slot = counters[match.court] || 0;
+    counters[match.court] = slot + 1;
+    (rounds[slot] ||= []).push(match);
+  }
+  const berlinTime = new Intl.DateTimeFormat('en-GB', { timeZone:'Europe/Berlin', hour:'2-digit', minute:'2-digit', hourCycle:'h23' });
+  let start = 10 * 60, completedPrefix = true;
+  for (const [slot, games] of rounds.entries()) {
+    const end = start + LEAGUE_GAME_MINUTES;
+    for (const match of games) Object.assign(match, {
+      label: leagueLabel(slot, start), scheduled_start_minutes: start, scheduled_end_minutes: end,
+    });
+    completedPrefix = completedPrefix && games.every(match => match.status === 'done');
+    let finished = end;
+    if (completedPrefix) for (const match of games) {
+      const timestamp = Date.parse(match.completed_at);
+      if (!Number.isFinite(timestamp)) continue;
+      // Round up so the displayed start always leaves at least five minutes.
+      const [hour, minute] = berlinTime.format(new Date(Math.ceil(timestamp / 60000) * 60000)).split(':').map(Number);
+      finished = Math.max(finished, hour * 60 + minute);
+    }
+    if (completedPrefix) for (const match of games) match.round_finished_minutes = finished;
+    start = finished + LEAGUE_BREAK_MINUTES;
+  }
+  return projected;
+}
+
+module.exports = { TOURNAMENT_RULES, getTournamentFormat, generateLeagueSchedule, applyLeagueTiming, assignLeagueReferees, getFixedSetWinner, getTimedWinner, generateRoundRobinSchedule, getMatchWinner, calculateStandings, generateRoundRobin, generateRoundsByRound };

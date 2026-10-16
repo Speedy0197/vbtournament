@@ -70,15 +70,17 @@ get('/admin/logout', async (req, res) => {
 });
 
 // ── Helper: build state ───────────────────────────────────────────────────────
-function currentMode(teams) {
-  return tournament.getTournamentFormat(teams.length);
+function currentMode(teams, groupMatches) {
+  const last = groupMatches.at(-1);
+  return tournament.getTournamentFormat(teams.length, last?.round_finished_minutes ?? last?.scheduled_end_minutes);
 }
 
 async function buildState() {
-  const { teams, matches } = await db.getFullState();
+  const state = await db.getFullState();
+  const teams = state.teams, matches = tournament.applyLeagueTiming(state.matches);
   const groupMatches = matches.filter(m => m.phase === 'group');
   const rules = await db.getScoringRules();
-  const mode = currentMode(teams);
+  const mode = currentMode(teams, groupMatches);
   const standings = { A: tournament.calculateStandings(teams, groupMatches, 'league') };
   const groupNames = ['A'];
   const placementMatches = matches.filter(m => m.phase === 'placement');
@@ -251,15 +253,18 @@ async function activeConflict(match) {
 
 // ── Score Entry ───────────────────────────────────────────────────────────────
 const scoreVersion = match => createHash('sha256').update(JSON.stringify([match.id,match.team1_id,match.team2_id,match.status,match.sets.map(s=>[s.set_number,s.team1_score,s.team2_score])])).digest('hex');
+async function scoreMatch(id) {
+  return tournament.applyLeagueTiming((await db.getFullState()).matches).find(match => match.id === id);
+}
 get('/admin/match/:id/score', requireAdmin, async (req, res) => {
-  const match = await db.getMatchWithSets(Number(req.params.id));
+  const match = await scoreMatch(Number(req.params.id));
   if (!match) return res.status(404).send('Match not found');
   if (await earlierCourtMatch(match)) return renderAdmin(res.status(409), 'Finish the earlier match on this court first.');
   res.render('admin/match', { match, error: null, locked: false, scoreVersion:scoreVersion(match) });
 });
 
 post('/admin/match/:id/score', requireAdmin, async (req, res) => {
-  const match = await db.getMatchWithSets(Number(req.params.id));
+  const match = await scoreMatch(Number(req.params.id));
   if (!match) return res.status(404).send('Match not found');
   if(req.body.scoreVersion!==undefined&&req.body.scoreVersion!==scoreVersion(match))return renderAdmin(res.status(409),'This score form is out of date: the teams or result changed. Reopen the game before saving.');
   if (await earlierCourtMatch(match)) return renderAdmin(res.status(409), 'Finish the earlier match on this court first.');
