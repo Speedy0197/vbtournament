@@ -1,0 +1,13 @@
+<article class="court">
+<div class="court-heading <%= m.status==='active'?'live':'' %>">
+<strong>Court <%= m.court %> · <%= m.status==='active'?'In progress':m.status==='done'?'Last result':m.phase==='group'?'Next match':ui.phase(m) %></strong>
+<% if(ui.time(m)){ %><time><%= ui.time(m) %></time><% } %>
+</div><div class="court-body">
+<div class="faceoff"><%- include('_team',{team:ui.team(m,1),size:'hero',vertical:true}) %>
+<span class="versus">VS</span><%- include('_team',{team:ui.team(m,2),size:'hero',vertical:true}) %></div>
+<% if(m.sets.length){ %><div class="court-result"><%- include('_score',{m}) %></div><% } %>
+<%- include('_referee',{m}) %>
+<% if(admin){ %>
+<% if(ui.blocked(m,allMatches)){ %><p class="waiting">Finish the earlier match on this court first.</p>
+<% }else{ %><a class="btn court-button <%= m.status==='done'?'btn-secondary':'' %>" href="/admin/match/<%= m.id %>/score"><%= m.status==='done'?'Edit result':'Enter score' %> · Court <%= m.court %></a><% } %>
+<% } %></div></article>

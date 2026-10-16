@@ -1,0 +1,4 @@
+<% if(m.sets && m.sets.length){ const r=ui.result(m); %>
+<span class="result-summary"><%= r.a %>–<%= r.b %><span class="sr-only"> in sets</span></span>
+<span class="set-results"><%= m.sets.map(s=>s.team1_score+'–'+s.team2_score).join(' · ') %></span>
+<% }else{ %><span class="muted">—</span><% } %>

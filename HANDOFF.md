@@ -1,0 +1,177 @@
+# Petrus Volleyball code and deployment handoff
+
+Prepared 16 October 2026 for continuing from a MacBook. The tournament is on 17 October 2026, Europe/Berlin. The application is implemented, tested and deployed; no feature work is currently outstanding.
+
+# Start here
+
+- Live scores: https://volleyball.florian-zug.de/
+- Admin and score entry: https://volleyball.florian-zug.de/admin
+- QR code: https://volleyball.florian-zug.de/qr
+- Printable schedule with referee assignments: https://volleyball.florian-zug.de/admin/print
+- Original backend address: https://petrus-volleyball.post8070.workers.dev/
+- Pages gateway: https://petrus-volleyball.pages.dev/
+- Repository: https://github.com/Speedy0197/vbtournament
+
+The latest released application is published on the main branch of https://github.com/Speedy0197/vbtournament. Clone the repository to continue on the MacBook. The private ChatGPT handoff also retains a source snapshot captured before this GitHub publication. The release was developed from commit a0f39c1be4bdb8da6356ba955af78384b22d1d22.
+
+At the last live read-only check on 16 October, production had seven teams and 21 pending league matches, with no saved scores. All pairings were unique. Each team had six games and three referee duties, with no simultaneous player/referee conflicts. The demo results described below exist only locally. Re-read /api/state before treating these counts as current on tournament day.
+
+# Fixed tournament rules
+
+The seven registered teams are Grüne Gurken, Hochball, Halb Netz Halb Aus, Netzfetzer, Netzflüsterer, Blockwürstchen and Petrus Team 26. Preserve their existing IDs and uploaded logos.
+
+- Two courts, approximately seven hours. League slots start at 10:00 and are exactly 20 minutes: two independent 10-minute sets. There is no additional five-minute changeover in the final configuration.
+- Finish the current rally at the buzzer. Any lead wins a timed set; if tied, one deciding rally settles it. Start the next set at 0–0.
+- A league game can finish 2–0, 1–1 or 0–2. A win gives two league points; a draw gives one to each team. Rankings use league points, point difference, points scored, then stable team-ID order.
+- Seven teams play 21 league games in 11 slots, ending at 13:40. Every pair plays once.
+- The top four qualify. Court 1 has semifinal 1 (1st versus 4th), semifinal 2 (2nd versus 3rd), then the final, sequentially.
+- All semifinals, the final and placement games are first to TWO set wins. Sets one and two are to 25; a deciding third set is to 15. Win by two, including extended scores. These games cannot draw.
+- On Court 2, the bottom three play a fresh three-match round robin for places 5–7. League results are not carried over. Placement ranking uses the existing match-points and rally-point tie breakers.
+- There is no third-place match. The semifinal losers share third place: final ranks are 1, 2, =3, =3, 5, 6, 7.
+- The later set-based games have 40-minute planning estimates, not hard time limits. The seven-team finish estimate is 16:45 including 65 minutes reserved for breaks and delays.
+
+There are no public mode banners or detailed rule paragraphs, and no dynamic game-mode or playoff-rule controls. Earlier historical plans about groups, 25-minute slots or configurable formats are superseded.
+
+# Six-team fallback and referee assignments
+
+Before any game starts or any score exists, Admin offers Teams & setup and a dedicated Six-team fallback section. Select the missing team and explicitly confirm rebuilding the schedule. The remaining names, IDs and logos are preserved. There are 15 league games in eight slots, then two semifinals, one final and one 5th-versus-6th game: 19 games overall. The same scoring rules apply. Final ranks are 1, 2, =3, =3, 5, 6.
+
+Each league match has one resting team assigned as referee. Seven teams have exactly three league referee duties each; six teams have two or three. A team cannot play or referee simultaneously on both courts.
+
+For Court 1, semifinal 1 uses league seed 2 as referee, semifinal 2 uses the loser of semifinal 1, and the final uses the loser of semifinal 2. In the seven-team placement round, the third placement team referees each match. In the six-team fallback, league seed 3 referees the 5th-versus-6th match.
+
+Six-team operational dependency: play 5th versus 6th alongside semifinal 1 and FINISH it before semifinal 2 starts, because seed 3 then plays semifinal 2. The organiser manages that timing; merely opening a score form does not mark a match active.
+
+# Admin behavior and score corrections
+
+Score entry has only Save result and Back. Opening the form or using Back is read-only. Save result requires two completed timed sets, or a complete 2–0/2–1 point-based result. It rejects partial games, tied timed sets, a third set after a 2–0, invalid winning margins and impossible terminal scores such as 30–10 in a set to 25.
+
+Completed games have Edit result. A corrected league result recalculates the league and reseeds affected pending semifinals and placement games. Correcting a semifinal winner updates the pending final and pending referee dependencies. A correction is refused if it would replace a participant in an already active, scored or completed dependent game. Harmless corrections that leave those participants unchanged remain allowed. Unaffected played games retain IDs, orientation, scores and historical referees.
+
+Score forms carry version guards. Corrections and bracket updates commit atomically in both SQLite and D1, with rollback and stale-write protection. If bracket advancement fails after saving a result, the result remains saved and Admin provides a retry action.
+
+Before play, teams can be added, removed, replaced and edited within the six/seven-team limit, and the schedule can be reset/regenerated with explicit confirmation. Those actions are blocked after any active/completed game or saved score. Logo updates remain available during the tournament.
+
+Admin prioritizes the next game ready for score entry, then other awaiting results; completed history is collapsed below. After every league, semifinal, final and placement match is done, both Scores and Admin display the winner, final set scores and all teams' final standings at the top. The public league table and coming-up panel are replaced. Corrections update this summary automatically. Admin retains a collapsed league table and completed-game editing.
+
+Public scores automatically refresh every two minutes while the tab is visible, plus a manual Refresh scores link. Admin forms do not auto-refresh. QR code and Admin login are separate pages. Team logos use their full aspect ratio and larger sizes.
+
+# Code map
+
+| File or folder | Responsibility |
+| --- | --- |
+| app.js | Shared Express routes, validation, setup, bracket advancement and state assembly, with injected database/icon adapters. |
+| server.js | Local Node entry point; loads dotenv, SQLite, local icons and EJS views. |
+| db.js | Local better-sqlite3 persistence, migrations/compatibility and atomic guards. |
+| tournament.js | Fixed rules, round robin generation, balanced referees, winners and standings. |
+| score-corrections.js | Plans corrected results, dependency changes and protection of played matches. |
+| presentation.js | UI helpers, court/queue ordering and finalResults completion/ranking logic. |
+| cloudflare/worker.mjs | Cloudflare entry using nodejs_compat and cloudflare:node HTTP bridge. |
+| cloudflare/database.mjs | Async D1 adapter with transactional batches and concurrency guards. |
+| cloudflare/icons.mjs | Logos stored in D1 team_icons/icon_chunks; versioned cache URLs. |
+| local-icons.js | Local filesystem logo adapter. |
+| views/ | EJS public, Admin, score, setup, QR and print templates. _final_standings.ejs is the winner/overall-rankings partial. |
+| public/style.css and public/client.js | Responsive styling, score refresh, image resizing/uploads and roster controls. |
+| scripts/build-cloudflare.mjs | Compiles strict EJS templates and bundles the Worker with esbuild; copies only approved public assets. |
+| scripts/build-domain-gateway.mjs | Builds the small Pages gateway and copies only style.css/client.js. |
+| cloudflare/domain-gateway/ | Pages _worker.js and its separate wrangler.jsonc. |
+| migrations/ | Applied migrations 0001_initial through 0005_referee_teams. |
+| *.test.js, *.test.mjs and test-support/ | Local, D1/Worker, gateway and shared correction tests. |
+| DEPLOYMENT.md | Longer operational history and release notes. This handoff summarizes the latest state. |
+
+Whenever adding an EJS partial or new template locals, update the viewLocals map in scripts/build-cloudflare.mjs. Local EJS rendering alone does not prove that strict compiled Worker templates work.
+
+The public /api/state endpoint is read-only and returns teams, matches with sets, league/placement standings, mode and rules. There is no separate frontend API project to deploy.
+
+# Cloudflare resources and deployment
+
+| Resource | Existing value |
+| --- | --- |
+| Account ID | 0e617072989f0ec7b25a41cbb3cbff41 |
+| Worker/service name | petrus-volleyball |
+| Worker version released 16 October | d63bccc7-1450-44f1-bb2b-8c20923e0301 |
+| D1 binding | DB |
+| D1 database name | petrus-volleyball |
+| D1 database ID | b32936df-779b-4dbd-8e65-290ddae0236d |
+| Pages project | petrus-volleyball |
+| Latest Pages deployment | e0078731.petrus-volleyball.pages.dev |
+| Pages service binding | TOURNAMENT points to petrus-volleyball Worker |
+| Canonical BASE_URL | https://volleyball.florian-zug.de |
+| Production admin secret name | ADMIN_PIN |
+
+The main wrangler.jsonc builds dist/worker.mjs and serves dist/public. Compatibility date is 2026-09-18, with nodejs_compat. The Pages gateway serves style.css/client.js from its own assets and forwards all other requests to the same Worker through the TOURNAMENT binding. It preserves Host and X-Forwarded headers. Both hostnames use the SAME database, uploaded logos, password and results.
+
+To deploy an authorized update from the project root:
+
+```sh
+npm ci
+npm test
+npm run test:cloudflare
+npx wrangler login
+npm run deploy:cloudflare
+npm run deploy:domain
+```
+
+The second deploy is required when CSS, client.js or gateway code changes, because the custom domain serves its own asset copies. Running both scripts is the straightforward complete release. The latest UI release needed no migration. Do not create a replacement D1 database, replace resources or reapply/reset production data as part of routine deployment.
+
+Pages commands must use the dedicated cloudflare/domain-gateway configuration. The deploy:domain script already supplies --cwd, --project-name and --branch main. Running a Pages project-create command from the root previously caused Wrangler to delegate to a Worker deployment. The Pages project already exists. Do not add account_id to the Pages config.
+
+# DNS and QR code
+
+The user kept the existing DNS provider. Nameservers are ns1.tldns.net and ns2.tldns.net. The user replaced the previous volleyball A/AAAA record with CNAME volleyball -> petrus-volleyball.pages.dev. Do not move the domain's nameservers.
+
+Cloudflare Pages domain association ID is 47e180d2-d290-49ee-a227-ed394d92eaea. Domain verification and certificate validation were active, and valid HTTPS was checked. BASE_URL and QR codes use https://volleyball.florian-zug.de. Preserve this canonical URL on future deployments.
+
+The Windows resolver temporarily cached the old A record 84.19.26.106. When diagnosing propagation, query fresh public DNS and retain normal TLS verification. Do not disable certificate checks or change system DNS as a workaround. HTTPS was successfully verified with fresh DNS; the user-facing browser also opened the custom domain normally.
+
+# MacBook setup and credentials
+
+Clone https://github.com/Speedy0197/vbtournament into a normal Mac folder and read HANDOFF.md and DEPLOYMENT.md. The repository contains the application, tests, package-lock.json and deployment configuration. Actual environment files, databases, build output and authentication tokens are excluded. The private ChatGPT handoff at https://chatgpt.com/space/page_4aac776fda748191b37ac45e8be2237d also includes an earlier source ZIP and a readable implementation attachment.
+
+Use Node 22 or 24 LTS and run npm ci on the Mac so better-sqlite3 is installed for macOS. Do not copy Windows node_modules. For local Express development:
+
+```sh
+git clone https://github.com/Speedy0197/vbtournament.git
+cd vbtournament
+npm ci
+ADMIN_PIN=local-preview BASE_URL=http://localhost:3000 PORT=3000 npm start
+```
+
+local-preview is an example local-only password, not the production secret. A new local database starts without the production roster/results; configure the six/seven teams in local Admin. For the Worker emulator, copy .dev.vars.example to .dev.vars, choose a local password, run npm run db:local, then npm run dev:cloudflare. Neither local environment file changes the production secret.
+
+Deployment from the Mac requires signing in to the Cloudflare account that owns the resources. Existing Windows Wrangler authentication is not transferred. The admin password is already set as the production ADMIN_PIN secret and was intentionally not included in any handoff file. The user knows it. No minimum password length is enforced. To deliberately change it, use npx wrangler secret put ADMIN_PIN and have the user enter the chosen password privately.
+
+Opening this handoff gives context; it does not connect another chat to the Windows filesystem or grant Cloudflare access. The Mac needs the cloned source plus its own authenticated deployment tooling to make changes.
+
+# Verification and current limits
+
+Latest full verification: 100 tests passed, comprising 71 local tests and 29 Cloudflare/gateway tests. Coverage includes complete six- and seven-team events, deciding third sets, rejection of placement draws/incomplete scores, referee scheduling, atomic setup/withdrawal, correction dependencies, stale forms/writers, rollback, compiled views, uploads, restart persistence, final-standings completion gating and corrected-final winner updates.
+
+After release, read-only checks confirmed HTTPS 200 for scores, QR, login and state; new CSS on the custom domain; and production state exactly unchanged. Earlier rehearsals also covered every possible missing-team fallback. Desktop and phone layouts were checked during UI work; actual venue connectivity and the organiser's own phone remain practical checks.
+
+Printing currently shows the league table, league schedule, playoff/placement results and placement table. The new combined winner/final-standings summary is on Scores and Admin, not yet on the print page. There is no offline result-entry/synchronization system; use a printed schedule and a shared external timer at the venue.
+
+# Windows-only finished demo
+
+The existing isolated demo is http://127.0.0.1:57244/ with Admin at /admin. It has all 27 games completed. Its script is D:/vbtournament/.superpowers/after-league-current.cjs and its preserved SQLite database is D:/vbtournament/.superpowers/after-league-p7BXnq/demo.db. Those localhost URLs and files do not automatically exist on the Mac. No demo database or production database is in the source ZIP.
+
+The demo's final standings are Blockwürstchen first, Halb Netz Halb Aus second, Hochball and Grüne Gurken joint third, Petrus Team 26 fifth, Netzflüsterer sixth and Netzfetzer seventh.
+
+- Semifinal 1: Blockwürstchen beats Hochball 2–1 (25–21, 22–25, 16–14).
+- Semifinal 2: Halb Netz Halb Aus beats Grüne Gurken 2–0 (Grüne first: 23–25, 21–25).
+- Final: Blockwürstchen beats Halb Netz Halb Aus 2–1 (25–22, 23–25, 15–13).
+- Placement: Petrus Team 26 beats Netzfetzer 2–1 (25–2, 15–25, 15–3); this unusual example was entered by the user and preserved.
+- Placement: Petrus Team 26 beats Netzflüsterer 2–0 (25–20, 25–21).
+- Placement: Netzflüsterer beats Netzfetzer 2–0 (Netzfetzer first: 20–25, 22–25).
+
+These are demonstration results, not actual tournament results. If recreating the demo on the Mac, seed only a new local/emulator database and never POST sample scores to the production hostname.
+
+# Continuing work
+
+The user's current assessment is that everything looks good. Preserve the fixed rules, custom domain, admin password and live data. Avoid speculative feature work before tournament day. On a future request, first read the supplied code and check the actual current live state, then change only what was requested and verify both Node and compiled Cloudflare behavior before deploying.
+
+A starting prompt for a new ChatGPT conversation:
+
+```text
+Continue maintenance of my Petrus Volleyball tournament app at https://github.com/Speedy0197/vbtournament. Read HANDOFF.md and DEPLOYMENT.md, then inspect the implementation and current tournament rules. The latest released code is on main. Treat the live tournament database as authoritative and keep demo scores local. Tell me what access is available on this Mac before attempting deployment. My next request is: ...
+```

@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { getMatchWinner, calculateStandings, generateRoundRobin } = require('./tournament');
+const { getMatchWinner, calculateStandings, generateRoundRobin, generateRoundsByRound, generateRoundRobinSchedule, getTournamentFormat, TOURNAMENT_RULES, generateLeagueSchedule } = require('./tournament');
 
 // getMatchWinner
 test('2-0: team1 wins', () => {
@@ -133,4 +133,88 @@ test('round robin produces n*(n-1)/2 pairs', () => {
 test('round robin: all unique pairs', () => {
   const pairs = generateRoundRobin([1, 2, 3]);
   assert.deepEqual(pairs.sort(), [[1, 2], [1, 3], [2, 3]].sort());
+});
+
+for (const [count, expectedRounds, expectedMatches] of [[3, 3, 3], [5, 5, 10], [6, 5, 15]]) {
+  test(count + '-team group: every pair plays once without self-matches or double bookings', () => {
+    const ids = Array.from({ length: count }, (_, i) => i + 1);
+    const rounds = generateRoundsByRound(ids);
+    assert.equal(rounds.length, expectedRounds);
+    assert.equal(rounds.flat().length, expectedMatches);
+    const pairs = new Set();
+    for (const round of rounds) {
+      const playing = new Set();
+      for (const [a, b] of round) {
+        assert.ok(ids.includes(a) && ids.includes(b));
+        assert.notEqual(a, b);
+        assert.ok(!playing.has(a) && !playing.has(b));
+        playing.add(a);
+        playing.add(b);
+        const key = [a, b].sort((x, y) => x - y).join('-');
+        assert.ok(!pairs.has(key));
+        pairs.add(key);
+      }
+    }
+    for (const id of ids) {
+      assert.equal(rounds.flat().filter(pair => pair.includes(id)).length, count - 1);
+    }
+    assert.deepEqual(ids, Array.from({ length: count }, (_, i) => i + 1));
+  });
+}
+
+test('fewer than two teams cannot produce a match', () => {
+  assert.deepEqual(generateRoundsByRound([]), []);
+  assert.deepEqual(generateRoundsByRound([1]), []);
+});
+
+for (let count = 2; count <= 12; count++) {
+  test(count + '-team single group fits on two courts without simultaneous team bookings', () => {
+    const ids = Array.from({ length: count }, (_, i) => i + 1);
+    const matches = generateRoundRobinSchedule(ids);
+    assert.equal(matches.length, count * (count - 1) / 2);
+    const pairs = new Set(matches.map(m => [m.team1_id, m.team2_id].sort((a, b) => a - b).join('-')));
+    assert.equal(pairs.size, matches.length);
+    const court1 = matches.filter(m => m.court === 1);
+    const court2 = matches.filter(m => m.court === 2);
+    for (let slot = 0; slot < Math.max(court1.length, court2.length); slot++) {
+      const playing = [court1[slot], court2[slot]].filter(Boolean).flatMap(m => [m.team1_id, m.team2_id]);
+      assert.equal(new Set(playing).size, playing.length);
+    }
+    for (const id of ids) assert.equal(matches.filter(m => m.team1_id === id || m.team2_id === id).length, count - 1);
+  });
+}
+
+for (const [count, league, total, finish] of [[6,15,19,'15:45'],[7,21,27,'16:45']]) {
+  test(count + '-team fixed tournament keeps the same league and knockout rules', () => {
+    const mode=getTournamentFormat(count);
+    assert.equal(mode.format,'league');
+    assert.equal(mode.groupMatchCount,league);
+    assert.equal(mode.totalMatches,total);
+    assert.equal(mode.minTeams,6); assert.equal(mode.maxTeams,7);
+    assert.equal(mode.timing.groupSlotMinutes,20);
+    assert.equal(mode.timing.finish,finish);
+    assert.equal(mode.timing.fitsWindow,true);
+    assert.deepEqual(TOURNAMENT_RULES,{setTarget:25,decidingSetTarget:15,matchMinutes:40,playoffSetsToWin:2});
+  });
+}
+test('event schedule accepts only six or seven teams',()=>{
+  for(const count of [0,5,8,12]) assert.throws(()=>generateLeagueSchedule(Array.from({length:count},(_,i)=>i+1)));
+});
+
+test('timed league counts draws, one-point wins, and only completed games', () => {
+  const teams = [1, 2, 3].map(id => ({ id, name: 'Team ' + id }));
+  const game = (a, b, x, y, status = 'done') => ({ team1_id: a, team2_id: b, status,
+    scoring_format: 'timed', sets: [{ team1_score: x, team2_score: y }] });
+  const standings = calculateStandings(teams, [game(1, 2, 20, 20), game(1, 3, 21, 20), game(2, 3, 100, 0, 'active')], 'league');
+  assert.deepEqual(standings.map(s => [s.team.id, s.wins, s.draws, s.losses, s.leaguePoints, s.pointDifference]),
+    [[1, 1, 1, 0, 3, 1], [2, 0, 1, 0, 1, 0], [3, 0, 0, 1, 0, -1]]);
+});
+
+test('league ties use point difference then points scored then stable seed order', () => {
+  const teams = [3, 2, 1].map(id => ({ id, name: 'Team ' + id }));
+  const games = [[1, 2, 10, 10], [1, 3, 20, 20], [2, 3, 30, 30]].map(([a, b, x, y]) => ({
+    team1_id: a, team2_id: b, status: 'done', scoring_format: 'timed', sets: [{ team1_score: x, team2_score: y }],
+  }));
+  assert.deepEqual(calculateStandings(teams, games, 'league').map(s => s.team.id), [3, 2, 1]);
+  assert.deepEqual(calculateStandings(teams, [], 'league').map(s => s.team.id), [1, 2, 3]);
 });

@@ -1,0 +1,31 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "petrus-volleyball",
+  "main": "dist/worker.mjs",
+  "compatibility_date": "2026-09-18",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "workers_dev": true,
+  "build": {
+    "command": "npm run build:cloudflare"
+  },
+  "assets": {
+    "directory": "./dist/public"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "petrus-volleyball",
+      "database_id": "b32936df-779b-4dbd-8e65-290ddae0236d",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "observability": {
+    "enabled": false
+  },
+  "account_id": "0e617072989f0ec7b25a41cbb3cbff41",
+  "vars": {
+    "BASE_URL": "https://volleyball.florian-zug.de"
+  }
+}

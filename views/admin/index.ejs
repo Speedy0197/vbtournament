@@ -1,79 +1,19 @@
-<%- include('../_header', { title: 'Admin' }) %>
-<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-  <h1 class="page-title" style="margin:0">Admin Dashboard</h1>
-  <div style="display:flex;gap:8px;align-items:center">
-    <a href="/admin/test" class="btn btn-secondary btn-sm">🧪 Test</a>
-    <a href="/admin/logout" class="btn btn-secondary btn-sm">Logout</a>
-  </div>
-</div>
-
-<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px">
-  <a href="/admin/print" target="_blank" class="btn btn-sm btn-secondary">🖨️ Print Standings</a>
-  <a href="/admin/setup" class="btn btn-sm">⚙️ Edit Teams</a>
-  <% if (teams.length > 0 && groupMatches.length === 0) { %>
-  <form method="POST" action="/admin/generate-schedule" style="display:inline">
-    <button type="submit" class="btn btn-sm">📅 Generate Schedule</button>
-  </form>
-  <% } %>
-  <% if (groupMatches.length > 0 && allGroupDone && bracketMatches.length === 0) { %>
-  <form method="POST" action="/admin/advance-bracket" style="display:inline">
-    <button type="submit" class="btn btn-sm" style="background:var(--gold)">🏆 Seed Bracket</button>
-  </form>
-  <% } %>
-</div>
-
-<% if (teams.length === 0) { %>
-<div class="alert alert-info">No teams yet. <a href="/admin/setup">Add teams</a> to get started.</div>
-<% } %>
-
-<% if (groupMatches.length > 0) { %>
-<details <%= allGroupDone ? '' : 'open' %> style="margin-bottom:24px">
-  <summary class="section-title" style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px">
-    Standings <span style="font-size:0.75rem;color:var(--muted)"><%= allGroupDone ? '(group phase complete)' : '' %></span>
-  </summary>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:10px">
-    <% ['A', 'B'].forEach(g => { %>
-    <div>
-      <p style="font-weight:600;margin-bottom:8px;color:var(--muted)">Group <%= g %></p>
-      <table class="standings-table">
-        <thead><tr><th>Team</th><th>W</th><th>L</th></tr></thead>
-        <tbody>
-          <% (standings[g] || []).forEach((s, i) => { %>
-          <tr class="<%= i < 2 ? 'advance' : (i < 4 ? 'silver-zone' : '') %>">
-            <td style="display:flex;align-items:center;gap:8px">
-              <% if (s.team.icon_path && s.team.icon_path.startsWith('/')) { %><img src="<%= s.team.icon_path %>" alt="" class="team-icon"><% } else if (s.team.icon_path) { %><span class="team-icon-placeholder"><%= s.team.icon_path %></span><% } else { %><span class="team-icon-placeholder"><%= s.team.name.charAt(0).toUpperCase() %></span><% } %>
-              <%= s.team.name %>
-            </td>
-            <td><%= s.wins %></td>
-            <td><%= s.losses %></td>
-          </tr>
-          <% }); %>
-        </tbody>
-      </table>
-    </div>
-    <% }); %>
-  </div>
-</details>
-<% } %>
-
-<% if (groupMatches.length > 0) { %>
-<details <%= allGroupDone ? '' : 'open' %> style="margin-bottom:24px">
-  <summary class="section-title" style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px">
-    Group Stage <span style="font-size:0.75rem;color:var(--muted)"><%= allGroupDone ? '(complete)' : '' %></span>
-  </summary>
-  <div style="margin-top:10px">
-    <% for (const m of groupMatches) { %>
-    <%- include('../_match_row', { m }) %>
-    <% } %>
-  </div>
-</details>
-<% } %>
-
-<% if (bracketMatches.length > 0) { %>
-<p class="section-title">Bracket</p>
-<% for (const m of bracketMatches) { %>
-<%- include('../_match_row', { m }) %>
-<% } %>
-<% } %>
-
-<%- include('../_footer') %>
+<%- include('../_header',{title:'Admin'}) %>
+<% const allMatches=groupMatches.concat(bracketMatches).sort((a,b)=>a.id-b.id); const finished=ui.finalResults(teams,allMatches); const courtMatches=ui.nextByCourt(allMatches).filter(m=>m.status!=='done'); const awaiting=ui.adminQueue(allMatches); const completed=allMatches.filter(m=>m.status==='done').reverse(); %>
+<div class="admin-head"><div><h1>Match desk</h1><p><%= finished?'The tournament is complete. Review or correct results below.':'Enter results and keep both courts moving.' %></p></div><div class="admin-actions"><a class="btn btn-secondary btn-sm" href="/admin/setup">Teams &amp; setup</a><a class="btn btn-secondary btn-sm" href="/admin/print" target="_blank">Print schedule</a><a class="btn btn-ghost btn-sm" href="/admin/logout">Logout</a></div></div>
+<% if(error){ %><div class="alert alert-error" role="alert"><%= error %></div><% } %>
+<% if(finished){ %><%- include('../_final_standings',{finished}) %><% } %>
+<% if(!finished){ %><div class="admin-progress"><%= groupMatches.filter(m=>m.status==='done').length %> of <%= groupMatches.length %> league games completed</div><% } %>
+<% if(courtMatches.length){ %><div class="courts"><% for(const m of courtMatches){ %><%- include('../_court',{m,admin:true,allMatches}) %><% } %></div><% }else{ %><div class="empty"><% if(allMatches.length){ %>All scheduled games have results. Completed games can be corrected below.<% }else{ %>No games scheduled. <a href="/admin/setup">Open tournament setup</a> or generate the schedule below.<% } %></div><% } %>
+<% if(awaiting.length){ %><section aria-labelledby="awaiting-results"><div class="sectionhead"><h2 id="awaiting-results">Awaiting results</h2><span>Ready games first</span></div><% for(const m of awaiting){ %><%- include('../_match_row',{m,admin:true,allMatches}) %><% } %></section><% } %>
+<% const semis=bracketMatches.filter(m=>m.phase==='gold_sf'); const needsBracket=allGroupDone&&(!semis.length||(semis.length===2&&semis.every(m=>m.status==='done')&&!bracketMatches.some(m=>m.phase==='gold_final'))); %>
+<% if(needsBracket){ %><form action="/admin/advance-bracket" method="POST" class="section-space"><button class="btn"><%= bracketMatches.length?'Retry bracket creation':'Seed semifinals' %></button></form><% } %>
+<% if(completed.length){ %><details class="section-space"><summary>Completed games (<%= completed.length %>)</summary><% for(const m of completed){ %><%- include('../_match_row',{m,admin:true,allMatches}) %><% } %></details><% } %>
+<% if(bracketMatches.length&&!finished){ %><%- include('../_placement_standings',{placementStandings}) %><% } %>
+<details class="section-space"><summary>League standings</summary><%- include('../_standings',{rows:standings.A,caption:'League standings',offset:0,placement:false}) %></details>
+<details class="management" <%= groupMatches.length?'':'open' %>><summary>Tournament setup · before play</summary>
+<div class="management-content"><span>Manage the roster, logos and schedule.</span><a class="btn btn-secondary btn-sm" href="/admin/setup">Edit teams</a></div>
+<% if(canSetup){ %><%- include('_schedule_form',{teams,groupMatches,mode}) %>
+<% if(canWithdraw){ %><details class="withdrawal"><summary>Six-team fallback · a team is missing</summary><p class="help">Remove the missing team and rebuild the league with balanced referee duties. Remaining teams keep their logos.</p><form method="POST" action="/admin/withdraw-team"><label for="missing-team">Missing team</label><select id="missing-team" name="teamId" required><option value="">Select a team</option><% for(const team of teams){ %><option value="<%= team.id %>"><%= team.name %></option><% } %></select><label class="check-label"><input type="checkbox" name="confirmReset" value="yes" required>Confirm the withdrawal and replace the schedule.</label><button class="btn btn-secondary btn-sm">Use six-team fallback</button></form></details><% } %>
+<% }else{ %><p class="help">Roster and schedule changes are locked because play has started. Logos can still be updated.</p><% } %>
+</details><%- include('../_footer') %>

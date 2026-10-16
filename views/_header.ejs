@@ -1,23 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= typeof title !== 'undefined' ? title + ' – ' : '' %>🏐 Petrus Volleyball Turnier</title>
-  <link rel="stylesheet" href="/style.css">
-  <% if (typeof refresh !== 'undefined' && refresh) { %>
-  <meta http-equiv="refresh" content="10">
-  <% } %>
-</head>
-<body class="<%= typeof bodyClass !== 'undefined' ? bodyClass : '' %>">
-<% if (typeof hideNav === 'undefined' || !hideNav) { %>
-<header class="site-header">
-  <a href="/" class="site-title">🏐 Petrus Volleyball Turnier</a>
-  <nav>
-    <a href="/">Scores</a>
-    <a href="/qr">QR Code</a>
-    <a href="/admin" class="admin-link">Admin</a>
-  </nav>
-</header>
-<% } %>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title><%= typeof title!=='undefined' ? title+' – ' : '' %>Petrus Volleyball Turnier</title>
+<link rel="stylesheet" href="/style.css">
+<% if(typeof refresh!=='undefined' && refresh){ %><meta name="scores-refresh" content="120"><% } %>
+</head><body class="<%= typeof bodyClass!=='undefined'?bodyClass:'' %>">
+<% if(typeof hideNav==='undefined'||!hideNav){ %>
+<header class="site-header"><div class="header-inner">
+<a href="/" class="site-title">🏐 Petrus Volleyball Turnier</a>
+<nav aria-label="Tournament"><a href="/">Scores</a><a href="/qr">QR Code</a><a href="/admin">Admin</a></nav>
+</div></header><% } %>
 <main>

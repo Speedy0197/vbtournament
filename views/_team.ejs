@@ -1,0 +1,4 @@
+<span class="club <%= typeof vertical!=='undefined'&&vertical?'vertical':'' %>">
+<% if(team.icon_path && team.icon_path.startsWith('/')){ %><img class="team-logo <%= typeof size!=='undefined'?size:'' %>" src="<%= team.icon_path %>" alt="" loading="<%= typeof size!=='undefined'&&size==='hero'?'eager':'lazy' %>">
+<% }else{ %><span class="team-logo logo-placeholder <%= typeof size!=='undefined'?size:'' %>" aria-hidden="true"><%= team.icon_path || Array.from(team.name||'?')[0] %></span><% } %>
+<span class="club-name"><%= team.name %></span></span>

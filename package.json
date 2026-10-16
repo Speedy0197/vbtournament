@@ -4,15 +4,27 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node --test tournament.test.js"
+    "test": "node --test tournament.test.js server.test.js client.test.js seven-team.test.js fixed-tournament.test.js ui.test.js score-corrections.test.js",
+    "build:cloudflare": "node scripts/build-cloudflare.mjs",
+    "dev:cloudflare": "wrangler dev",
+    "test:cloudflare": "npm run build:cloudflare && node --test cloudflare.test.mjs score-corrections.cloudflare.test.mjs domain-gateway.test.mjs",
+    "db:local": "wrangler d1 migrations apply DB --local",
+    "deploy:cloudflare": "wrangler deploy",
+    "build:domain": "node scripts/build-domain-gateway.mjs",
+    "deploy:domain": "npm run build:domain && wrangler pages deploy --cwd cloudflare/domain-gateway --project-name petrus-volleyball --branch main --commit-dirty=true"
   },
   "dependencies": {
-    "better-sqlite3": "^9.4.3",
+    "better-sqlite3": "^12.11.1",
     "cookie-parser": "^1.4.6",
     "dotenv": "^16.4.5",
     "ejs": "^3.1.9",
     "express": "^4.18.2",
-    "multer": "^2.2.0",
+    "multer": "^2.3.0",
     "qrcode": "^1.5.3"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "miniflare": "^5.20260917.0-alpha",
+    "wrangler": "^4.134.0"
   }
 }

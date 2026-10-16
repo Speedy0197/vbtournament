@@ -1,8 +1,3 @@
-<%- include('_header', { title: 'QR Code' }) %>
-<div class="qr-container">
-  <h1 class="page-title">Scan to follow scores</h1>
-  <img src="<%= qrDataUrl %>" alt="QR code for <%= baseUrl %>">
-  <div class="qr-url"><%= baseUrl %></div>
-  <p style="color:var(--muted);margin-top:12px;font-size:0.85rem">Points to the live scoreboard</p>
-</div>
+<%- include('_header',{title:'QR Code'}) %>
+<section class="qr-panel"><h1>Follow the tournament</h1><img src="<%= qrDataUrl %>" alt="QR code for the live Petrus Volleyball scores"><p>Scan for scores, standings and the next games.</p><a class="qr-url" href="<%= baseUrl %>"><%= baseUrl %></a></section>
 <%- include('_footer') %>

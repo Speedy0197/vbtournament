@@ -1,124 +1,14 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Standings – Petrus Volleyball Turnier</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: system-ui, -apple-system, sans-serif; background: #fff; color: #000; padding: 24px; }
-    h1 { font-size: 1.4rem; font-weight: 700; margin-bottom: 4px; }
-    .meta { font-size: 0.8rem; color: #555; margin-bottom: 24px; }
-    .section { margin-bottom: 28px; }
-    h2 { font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #444; border-bottom: 2px solid #000; padding-bottom: 4px; margin-bottom: 12px; }
-    .groups { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
-    h3 { font-size: 0.9rem; font-weight: 700; margin-bottom: 6px; }
-    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-    th { text-align: left; padding: 5px 8px; border-bottom: 1px solid #000; font-weight: 600; }
-    td { padding: 6px 8px; border-bottom: 1px solid #ddd; }
-    .rank { width: 28px; text-align: center; }
-    .advance td { font-weight: 700; }
-    .bracket-item { padding: 5px 0; border-bottom: 1px solid #ddd; font-size: 0.85rem; }
-    .bracket-item:last-child { border-bottom: none; }
-    .bracket-label { font-size: 0.72rem; color: #666; }
-    .no-print { margin-top: 28px; }
-    button { padding: 8px 16px; cursor: pointer; font-size: 0.85rem; }
-    @media print { .no-print { display: none; } }
-  </style>
-</head>
-<body>
-  <h1>🏐 Petrus Volleyball Turnier</h1>
-  <p class="meta">Printed: <%= new Date().toLocaleString('de-DE') %></p>
-
-  <div class="section">
-    <h2>Group Standings</h2>
-    <div class="groups">
-      <% ['A', 'B'].forEach(g => { %>
-      <div>
-        <h3>Group <%= g %></h3>
-        <table>
-          <thead>
-            <tr>
-              <th class="rank">#</th>
-              <th>Team</th>
-              <th>W</th>
-              <th>L</th>
-              <th>Sets</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% (standings[g] || []).forEach((s, i) => { %>
-            <tr class="<%= i < 2 ? 'advance' : '' %>">
-              <td class="rank"><%= i + 1 %></td>
-              <td><%= s.team.name %></td>
-              <td><%= s.wins %></td>
-              <td><%= s.losses %></td>
-              <td><%= s.setsWon %>–<%= s.setsLost %></td>
-            </tr>
-            <% }); %>
-          </tbody>
-        </table>
-      </div>
-      <% }); %>
-    </div>
-  </div>
-
-  <% if (groupMatches.length > 0) { %>
-  <div class="section">
-    <h2>Group Stage Results</h2>
-    <div class="groups">
-      <% ['A', 'B'].forEach(g => { %>
-      <div>
-        <h3>Group <%= g %></h3>
-        <table>
-          <thead>
-            <tr>
-              <th>Match</th>
-              <th style="text-align:center">Score</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% groupMatches.filter(m => { const teams = standings[g] || []; return teams.some(s => s.team.id === m.team1_id); }).forEach(m => { %>
-            <tr>
-              <td><%= m.team1_name %> vs <%= m.team2_name %></td>
-              <td style="text-align:center;font-weight:600">
-                <% if (m.sets && m.sets.length > 0) { %>
-                  <%= m.sets.map(s => `${s.team1_score}–${s.team2_score}`).join(' | ') %>
-                <% } else { %>—<% } %>
-              </td>
-            </tr>
-            <% }); %>
-          </tbody>
-        </table>
-      </div>
-      <% }); %>
-    </div>
-  </div>
-  <% } %>
-
-  <% if (bracketMatches.length > 0) { %>
-  <div class="section">
-    <h2>Bracket</h2>
-    <% for (const m of bracketMatches) { %>
-    <div class="bracket-item">
-      <div class="bracket-label"><%= m.label || m.phase.replace(/_/g, ' ').toUpperCase() %></div>
-      <div>
-        <%= m.team1_name %> vs <%= m.team2_name %>
-        <% if (m.sets && m.sets.length > 0) { %>
-        &nbsp;(<%= m.sets.map(s => `${s.team1_score}–${s.team2_score}`).join(' | ') %>)
-        <% } %>
-        <% if (m.status === 'done') { %>
-        &nbsp;✓
-        <% } %>
-      </div>
-    </div>
-    <% } %>
-  </div>
-  <% } %>
-
-  <div class="no-print">
-    <button onclick="window.close()">Close tab</button>
-  </div>
-
-  <script>window.print();</script>
-</body>
-</html>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Petrus Volleyball · Print schedule</title><link rel="stylesheet" href="/style.css">
+<style>
+body{background:white;color:#17273d}main{max-width:1100px;padding:24px}.print-head{display:flex;justify-content:space-between;align-items:center;gap:20px;margin-bottom:24px}.print-head h1{font-size:22px}.print-head p{font-size:12px;color:#61738d;margin-top:5px}.print-table{width:100%;border-collapse:collapse;font-size:12px}.print-table th{text-align:left;padding:9px 6px;border-bottom:2px solid #17273d;font-weight:650}.print-table td{padding:8px 6px;border-bottom:1px solid #d8e1ec;vertical-align:middle}.print-time{white-space:nowrap;color:#48617f}.print-team{display:flex;align-items:center;gap:7px;margin:4px 0}.print-logo{width:26px;height:26px;object-fit:contain}.print-table .result-summary{font-size:17px}.print-table .set-results{font-size:10px}.print-section{margin-top:28px}.print-section h2{margin-bottom:12px}.print-table-wrap{overflow-x:auto}.print-table-wrap table{min-width:640px}
+@media print{@page{size:A4;margin:12mm}body{font-size:10px}main{padding:0;max-width:none}.no-print{display:none!important}.print-head{margin-bottom:18px}.print-head h1{font-size:18px}.print-table{font-size:10px}.print-table th,.print-table td{padding:6px 4px}.print-table tr{break-inside:avoid}.print-table thead{display:table-header-group}.print-logo{width:22px;height:22px}.print-section{margin-top:20px}.print-table-wrap{overflow:visible}.print-table-wrap table{min-width:0}.standings-table{font-size:10px}.standings-table .team-logo{width:28px;height:28px}.standings-table .club-name{font-size:10px}.standings-table .optional{display:table-cell}.standings-table .mobile-record{display:none}.standings-table td{padding:5px}.standings-table .pts{font-size:12px}.standings-table th:not(.team-column){width:32px}}
+</style></head><body><main>
+<header class="print-head"><div><h1>Petrus Volleyball Turnier</h1><p>Schedule &amp; results · Printed <%= new Date().toLocaleString('de-DE',{timeZone:'Europe/Berlin'}) %></p></div><div class="no-print"><button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button> <a class="btn btn-secondary btn-sm" href="/admin">Back</a></div></header>
+<%- include('../_standings',{rows:standings.A,caption:'League standings',offset:0,placement:false}) %>
+<section class="print-section"><h2>League schedule and results</h2><div class="print-table-wrap"><table class="print-table"><thead><tr><th>Time</th><th>Court</th><th>Match</th><th>Referee team:</th><th>Result</th></tr></thead><tbody>
+<% for(const m of groupMatches){ %><tr><td class="print-time"><%= ui.time(m) %></td><td><%= m.court %></td><td>
+<% for(const side of [1,2]){const t=ui.team(m,side); %><div class="print-team"><% if(t.icon_path&&t.icon_path.startsWith('/')){ %><img src="<%= t.icon_path %>" alt="" class="print-logo"><% } %><%= t.name %></div><% } %>
+</td><td><%= ui.referee(m).name %></td><td><%- include('../_score',{m}) %></td></tr><% } %>
+</tbody></table></div></section>
+<% if(bracketMatches.length){ %><section class="print-section"><h2>Playoffs and placement games</h2><div class="print-table-wrap"><table class="print-table"><thead><tr><th>Match</th><th>Court</th><th>Teams</th><th>Referee team:</th><th>Result</th></tr></thead><tbody><% for(const m of bracketMatches){ %><tr><td><%= ui.phase(m) %></td><td><%= m.court %></td><td><%= m.team1_name %><br><%= m.team2_name %></td><td><%= ui.referee(m).name %></td><td><%- include('../_score',{m}) %></td></tr><% } %></tbody></table></div></section><section class="print-section"><%- include('../_placement_standings',{placementStandings}) %></section><% } %>
+</main></body></html>

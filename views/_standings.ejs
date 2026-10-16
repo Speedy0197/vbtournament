@@ -1,0 +1,8 @@
+<% const start=typeof offset!=='undefined'?offset:0; const isPlacement=typeof placement!=='undefined'&&placement; %>
+<section class="standings-section"><div class="sectionhead"><h2><%= caption %></h2></div>
+<table class="standings-table"><thead><tr><th class="rank">#</th><th class="team-column">Team</th><th class="points">Pts</th><th class="optional">W</th><% if(!isPlacement){ %><th class="optional">D</th><% } %><th class="optional">L</th><th>+/−</th></tr></thead>
+<tbody><% rows.forEach((s,i)=>{ %><tr>
+<td class="rank"><%= i+1+start %></td>
+<td class="teamcell"><%- include('_team',{team:s.team,size:'',vertical:false}) %><span class="mobile-record"><%= s.wins %>W<% if(!isPlacement){ %> · <%= s.draws %>D<% } %> · <%= s.losses %>L</span></td>
+<td class="pts"><%= s.leaguePoints %></td><td class="optional"><%= s.wins %></td><% if(!isPlacement){ %><td class="optional"><%= s.draws %></td><% } %><td class="optional"><%= s.losses %></td><td class="muted"><%= s.pointDifference>0?'+':'' %><%= s.pointDifference %></td>
+</tr><% }); %></tbody></table></section>

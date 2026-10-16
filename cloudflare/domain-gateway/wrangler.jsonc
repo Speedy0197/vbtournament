@@ -1,0 +1,11 @@
+{
+  "name": "petrus-volleyball",
+  "pages_build_output_dir": "../../dist/domain-gateway",
+  "compatibility_date": "2026-09-18",
+  "services": [
+    {
+      "binding": "TOURNAMENT",
+      "service": "petrus-volleyball"
+    }
+  ]
+}

@@ -1,149 +1,22 @@
-<%- include('_header', { title: 'Scores', refresh: true }) %>
-
-<% const liveMatches    = matches.filter(m => m.status === 'active'); %>
-<% const groupMatches   = matches.filter(m => m.phase === 'group'); %>
-<% const bracketMatches = matches.filter(m => m.phase !== 'group'); %>
-<%
-const MATCH_MIN = 40;
-const courtSlot = {};
-const upcoming10 = [];
-for (const m of matches.filter(x => x.status === 'pending')) {
-  if (upcoming10.length >= 6) break;
-  const c = m.court || 1;
-  if (courtSlot[c] === undefined) courtSlot[c] = 0;
-  upcoming10.push({ m, approxMin: courtSlot[c] * MATCH_MIN });
-  courtSlot[c]++;
-}
-%>
-
-<% if (liveMatches.length > 0) { %>
-<p class="section-title">🔴 Live Now</p>
-<% for (const m of liveMatches) { %>
-<div class="card match-card">
-  <div class="match-teams">
-    <div class="team-name" style="display:flex;align-items:center;gap:8px">
-      <% if (m.team1_icon && m.team1_icon.startsWith('/')) { %><img src="<%= m.team1_icon %>" alt="" class="team-icon"><% } else if (m.team1_icon) { %><span class="team-icon-placeholder"><%= m.team1_icon %></span><% } else { %><span class="team-icon-placeholder"><%= m.team1_name.charAt(0).toUpperCase() %></span><% } %>
-      <%= m.team1_name %>
-    </div>
-    <div class="match-vs">vs</div>
-    <div class="team-name" style="display:flex;align-items:center;gap:8px">
-      <% if (m.team2_icon && m.team2_icon.startsWith('/')) { %><img src="<%= m.team2_icon %>" alt="" class="team-icon"><% } else if (m.team2_icon) { %><span class="team-icon-placeholder"><%= m.team2_icon %></span><% } else { %><span class="team-icon-placeholder"><%= m.team2_name.charAt(0).toUpperCase() %></span><% } %>
-      <%= m.team2_name %>
-    </div>
-  </div>
-  <div>
-    <% if (m.sets.length > 0) { %>
-      <% for (const s of m.sets) { %>
-      <div style="display:flex;gap:8px;align-items:center;margin:2px 0">
-        <span class="team-score" style="font-size:1.1rem"><%= s.team1_score %></span>
-        <span style="color:var(--muted)">–</span>
-        <span class="team-score" style="font-size:1.1rem"><%= s.team2_score %></span>
-        <span class="match-meta">Set <%= s.set_number %></span>
-      </div>
-      <% } %>
-    <% } else { %>
-      <span class="badge badge-live">Live</span>
-    <% } %>
-  </div>
-</div>
+<%- include('_header',{title:'Scores',refresh:true}) %>
+<div class="topline"><h1>Scores</h1><div class="sync"><span>Auto-refresh · every 2 min</span><a class="btn btn-secondary btn-sm" href="/">Refresh scores</a></div></div>
+<% const finished=ui.finalResults(teams,matches); const courtMatches=ui.nextByCourt(matches); const showingIds=new Set(courtMatches.map(m=>m.id)); const pending=matches.filter(m=>m.status==='pending'&&!showingIds.has(m.id)); const completed=matches.filter(m=>m.phase==='group'&&m.status==='done').reverse(); const playoffs=matches.filter(m=>m.phase!=='group'); %>
+<% if(finished){ %><%- include('_final_standings',{finished}) %><% }else{ %>
+<div class="sectionhead"><h2>Next on court</h2></div>
+<div class="courts"><% for(const court of [1,2]){ const m=courtMatches.find(m=>m.court===court); if(m){ %><%- include('_court',{m,admin:false,allMatches:matches}) %>
+<% }else{ %><article class="court"><div class="court-heading"><strong>Court <%= court %></strong></div><p class="empty">The schedule will appear here.</p></article><% }} %></div>
+<div class="main-columns"><%- include('_standings',{rows:standings.A,caption:'League standings',offset:0,placement:false}) %>
+<section class="up-next"><div class="sectionhead"><h2>Coming up</h2><span>Following matches</span></div><div class="queue">
+<% for(const m of pending.slice(0,4)){ %><article class="queue-item"><div class="queue-meta"><strong>Court <%= m.court %></strong><time><%= ui.time(m)||ui.phase(m) %></time></div>
+<%- include('_team',{team:ui.team(m,1),size:'small',vertical:false}) %><%- include('_team',{team:ui.team(m,2),size:'small',vertical:false}) %><%- include('_referee',{m}) %></article><% } %>
+<% if(!pending.length){ %><p class="empty"><%= matches.length?'No more scheduled games.':'The schedule is being prepared.' %></p><% } %></div></section></div>
 <% } %>
+<% if(playoffs.length){ %>
+<section class="rounds"><div class="sectionhead"><h2>Court 1 · Semifinals and final</h2></div><% for(const m of playoffs.filter(m=>m.phase!=='placement')){ %><%- include('_match_row',{m,admin:false,allMatches:matches}) %><% } %></section>
+<% if(!finished){ %><%- include('_placement_standings',{placementStandings}) %><% } %>
+<section class="rounds"><div class="sectionhead"><h2>Court 2 · Placement games</h2></div><% for(const m of playoffs.filter(m=>m.phase==='placement')){ %><%- include('_match_row',{m,admin:false,allMatches:matches}) %><% } %></section>
 <% } %>
-
-<% if (bracketMatches.length > 0) { %>
-<p class="section-title">🏆 Bracket</p>
-<div class="grid-2">
-  <div>
-    <p style="font-size:0.8rem;font-weight:600;color:var(--gold);margin-bottom:8px">GOLD</p>
-    <% for (const m of bracketMatches.filter(x => x.phase.includes('gold'))) { %>
-    <div class="card" style="margin-bottom:6px">
-      <div style="font-size:0.75rem;color:var(--muted);margin-bottom:6px"><%= m.label || m.phase.replace('_',' ').toUpperCase() %></div>
-      <div style="font-weight:600"><%= m.team1_name %> <span style="color:var(--muted)">vs</span> <%= m.team2_name %></div>
-      <% if (m.sets.length > 0) { %>
-      <div class="sets-display"><%= m.sets.map(s => `${s.team1_score}–${s.team2_score}`).join(' | ') %></div>
-      <% } %>
-      <span class="badge badge-<%= m.status %>" style="margin-top:4px"><%= m.status %></span>
-    </div>
-    <% } %>
-  </div>
-  <div>
-    <p style="font-size:0.8rem;font-weight:600;color:var(--silver);margin-bottom:8px">SILVER</p>
-    <% for (const m of bracketMatches.filter(x => x.phase.includes('silver'))) { %>
-    <div class="card" style="margin-bottom:6px">
-      <div style="font-size:0.75rem;color:var(--muted);margin-bottom:6px"><%= m.label || m.phase.replace('_',' ').toUpperCase() %></div>
-      <div style="font-weight:600"><%= m.team1_name %> <span style="color:var(--muted)">vs</span> <%= m.team2_name %></div>
-      <% if (m.sets.length > 0) { %>
-      <div class="sets-display"><%= m.sets.map(s => `${s.team1_score}–${s.team2_score}`).join(' | ') %></div>
-      <% } %>
-      <span class="badge badge-<%= m.status %>" style="margin-top:4px"><%= m.status %></span>
-    </div>
-    <% } %>
-  </div>
-</div>
-<% } %>
-
-<p class="section-title">Group Standings</p>
-<div class="grid-2">
-  <% ['A','B'].forEach(g => { %>
-  <div>
-    <p style="font-size:0.85rem;font-weight:600;margin-bottom:6px">Group <%= g %></p>
-    <table class="standings-table">
-      <thead><tr><th class="rank">#</th><th class="team-col">Team</th><th class="num">W</th><th class="num">L</th><th class="num">Sets</th></tr></thead>
-      <tbody>
-        <% (standings[g] || []).forEach((s, i) => { %>
-        <tr>
-          <td class="rank <%= i < 2 ? 'advance' : i < 4 ? 'silver-zone' : '' %>"><%= i + 1 %></td>
-          <td class="team-col" style="display:flex;align-items:center;gap:8px">
-            <% if (s.team.icon_path && s.team.icon_path.startsWith('/')) { %><img src="<%= s.team.icon_path %>" alt="" class="team-icon"><% } else if (s.team.icon_path) { %><span class="team-icon-placeholder"><%= s.team.icon_path %></span><% } else { %><span class="team-icon-placeholder"><%= s.team.name.charAt(0).toUpperCase() %></span><% } %>
-            <%= s.team.name %>
-          </td>
-          <td class="num"><%= s.wins %></td>
-          <td class="num"><%= s.losses %></td>
-          <td class="num"><%= s.setsWon %>–<%= s.setsLost %></td>
-        </tr>
-        <% }); %>
-      </tbody>
-    </table>
-  </div>
-  <% }); %>
-</div>
-
-<% if (upcoming10.length > 0) { %>
-<p class="section-title">Upcoming</p>
-<% for (const { m, approxMin } of upcoming10) { %>
-<div class="card" style="display:flex;align-items:center;gap:12px;padding:10px 14px">
-  <div style="display:flex;align-items:center;gap:6px;font-weight:600;font-size:0.95rem;flex:1;flex-wrap:wrap">
-    <% if (m.team1_icon && m.team1_icon.startsWith('/')) { %><img src="<%= m.team1_icon %>" alt="" class="team-icon"><% } else if (m.team1_icon) { %><span class="team-icon-placeholder"><%= m.team1_icon %></span><% } else { %><span class="team-icon-placeholder"><%= m.team1_name.charAt(0).toUpperCase() %></span><% } %>
-    <%= m.team1_name %>
-    <span style="color:var(--muted);font-weight:400">vs</span>
-    <% if (m.team2_icon && m.team2_icon.startsWith('/')) { %><img src="<%= m.team2_icon %>" alt="" class="team-icon"><% } else if (m.team2_icon) { %><span class="team-icon-placeholder"><%= m.team2_icon %></span><% } else { %><span class="team-icon-placeholder"><%= m.team2_name.charAt(0).toUpperCase() %></span><% } %>
-    <%= m.team2_name %>
-    <% if (m.court) { %><span class="match-meta" style="font-weight:400">· Feld <%= m.court %><% if (m.label) { %> · <%= m.label %><% } %></span><% } %>
-  </div>
-  <div style="white-space:nowrap;font-size:0.85rem;font-weight:600;color:<%= approxMin === 0 ? 'var(--green)' : 'var(--muted)' %>">
-    <%= approxMin === 0 ? 'Ongoing' : '~' + approxMin + 'm' %>
-  </div>
-</div>
-<% } %>
-<% } %>
-
-<% const doneGroupMatches = matches.filter(m => m.phase === 'group' && m.status === 'done').reverse(); %>
-<% if (doneGroupMatches.length > 0) { %>
-<p class="section-title">Results</p>
-<% for (const m of doneGroupMatches) { %>
-<div class="card" style="display:flex;align-items:center;gap:10px;padding:10px 14px">
-  <div style="flex:1;display:flex;align-items:center;gap:6px;font-size:0.9rem">
-    <% if (m.team1_icon && m.team1_icon.startsWith('/')) { %><img src="<%= m.team1_icon %>" alt="" class="team-icon"><% } else if (m.team1_icon) { %><span class="team-icon-placeholder"><%= m.team1_icon %></span><% } else { %><span class="team-icon-placeholder"><%= m.team1_name.charAt(0).toUpperCase() %></span><% } %>
-    <span style="font-weight:600"><%= m.team1_name %></span>
-    <span style="color:var(--muted);margin:0 4px">vs</span>
-    <% if (m.team2_icon && m.team2_icon.startsWith('/')) { %><img src="<%= m.team2_icon %>" alt="" class="team-icon"><% } else if (m.team2_icon) { %><span class="team-icon-placeholder"><%= m.team2_icon %></span><% } else { %><span class="team-icon-placeholder"><%= m.team2_name.charAt(0).toUpperCase() %></span><% } %>
-    <span style="font-weight:600"><%= m.team2_name %></span>
-  </div>
-  <div style="font-size:0.85rem;font-weight:600;white-space:nowrap">
-    <% if (m.sets && m.sets.length > 0) { %><%= m.sets.map(s => `${s.team1_score}–${s.team2_score}`).join(' | ') %><% } %>
-  </div>
-</div>
-<% } %>
-<% } %>
-
-<p style="font-size:0.75rem;color:var(--muted);text-align:center;margin-top:32px">Refreshes every 10 seconds</p>
+<% if(completed.length){ %><section class="rounds"><div class="sectionhead"><h2>Results</h2></div><% for(const m of completed){ %><%- include('_match_row',{m,admin:false,allMatches:matches}) %><% } %></section><% } %>
+<% if(matches.some(m=>m.phase==='group'&&m.status==='pending')){ %><details class="full-schedule"><summary>Full league schedule</summary><% for(const m of matches.filter(m=>m.phase==='group')){ %><%- include('_match_row',{m,admin:false,allMatches:matches}) %><% } %></details><% } %>
+<footer class="product-footer"><span>Petrus Volleyball Turnier</span><a href="/qr">QR Code</a></footer>
 <%- include('_footer') %>

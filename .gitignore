@@ -2,3 +2,11 @@ node_modules/
 tournament.db
 .env
 .superpowers/
+
+dist/
+.wrangler/
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+
+*-backup.sql

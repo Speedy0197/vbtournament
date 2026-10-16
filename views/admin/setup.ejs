@@ -1,48 +1,26 @@
-<%- include('../_header', { title: 'Team Setup' }) %>
-<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-  <h1 class="page-title" style="margin-bottom:0">Team Setup</h1>
-  <a href="/admin" class="btn btn-secondary btn-sm">← Back</a>
+<%- include('../_header',{title:'Teams & setup'}) %>
+<div class="admin-head"><div><h1>Teams &amp; setup</h1><p>Manage the tournament before play starts.</p></div><a class="btn btn-secondary btn-sm" href="/admin">← Match desk</a></div>
+<% if(error){ %><div class="alert alert-error" role="alert"><%= error %></div><% } %>
+<div class="admin-progress"><strong><%= canSetup?'Setup open':'Setup locked' %></strong> · <%= canSetup?'No active games or saved scores.':'The tournament has started. Logos can still be updated.' %></div>
+<form id="roster-form" method="POST" action="/admin/setup">
+<input type="hidden" name="rosterVersion" value="<%= rosterVersion %>">
+<div class="sectionhead"><h2>Team roster</h2><span>Six or seven teams</span></div>
+<div class="logo-grid" id="team-roster">
+<% for(const team of teams){ %><article class="logo-tile" data-roster-team>
+<%- include('../_team',{team,size:'hero',vertical:true}) %>
+<input type="hidden" name="teamId" value="<%= team.id %>">
+<label class="sr-only" for="name-<%= team.id %>">Team name</label><input id="name-<%= team.id %>" type="text" name="name" maxlength="100" value="<%= team.name %>" required <%= canSetup?'':'readonly' %>>
+<div class="team-actions"><label class="btn btn-secondary btn-sm">Change logo<input type="file" name="icon" accept="image/png,image/jpeg,image/gif,image/webp" form="icon-form-<%= team.id %>" data-icon-upload hidden></label>
+<% if(canSetup){ %><button type="button" class="btn btn-ghost btn-sm" data-remove-team>Remove</button><% } %></div>
+</article><% } %>
 </div>
-
-<% if (typeof message !== 'undefined' && message) { %>
-<div class="alert alert-info"><%= message %></div>
-<% } %>
-
-<form method="POST" action="/admin/setup" onsubmit="return <%= teams.length > 0 ? 'confirm(\'This will reset all teams and match data. Continue?\')' : 'true' %>">
-  <p style="color:var(--muted);font-size:0.85rem;margin-bottom:16px">
-    Enter up to 12 teams. Leave name blank to skip that row. Saving this will reset all existing data.
-  </p>
-
-  <% for (let i = 0; i < 12; i++) { const t = teams[i] || {}; %>
-  <div class="team-input-row">
-    <% if (t.icon_path && t.icon_path.startsWith('/')) { %>
-    <img src="<%= t.icon_path %>" alt="" class="team-icon">
-    <% } else if (t.icon_path) { %>
-    <span class="team-icon-placeholder"><%= t.icon_path %></span>
-    <% } else { %>
-    <span class="team-icon-placeholder" style="background:var(--border);color:var(--muted)"><%= t.name ? t.name.charAt(0).toUpperCase() : (i + 1) %></span>
-    <% } %>
-    <input type="text" name="name" placeholder="Team <%= i + 1 %> name" value="<%= t.name || '' %>">
-    <input type="hidden" name="emoji" value="<%= t.icon_path && !t.icon_path.startsWith('/') ? t.icon_path : '' %>">
-    <% if (t.id) { %>
-    <label class="btn btn-sm btn-secondary" style="cursor:pointer">
-      📷 Bild
-      <input type="file" name="icon" accept="image/*" form="icon-form-<%= t.id %>" onchange="document.getElementById('icon-form-<%= t.id %>').submit()" style="display:none">
-    </label>
-    <% } else { %>
-    <span></span>
-    <% } %>
-  </div>
-  <% } %>
-
-  <div style="margin-top:20px;display:flex;gap:12px">
-    <button type="submit" class="btn">Save Teams</button>
-    <a href="/admin" class="btn btn-secondary">Cancel</a>
-  </div>
-</form>
-
-<% for (const t of teams) { %>
-<form id="icon-form-<%= t.id %>" method="POST" action="/admin/team/<%= t.id %>/icon" enctype="multipart/form-data"></form>
-<% } %>
-
+<% if(canSetup){ %>
+<template id="new-team-template"><article class="logo-tile" data-roster-team><span class="team-logo hero logo-placeholder">+</span><label>Team name<input name="name" type="text" maxlength="100" required placeholder="New team"></label><input name="teamId" type="hidden" value=""><p class="help">Upload a logo after saving.</p><button type="button" class="btn btn-ghost btn-sm" data-remove-team>Remove</button></article></template>
+<div class="management-content"><p class="help" id="roster-count" role="status">Keep six or seven teams. Removed teams leave the tournament.</p><button type="button" class="btn btn-secondary btn-sm" id="add-team">Add team</button></div>
+<section class="management"><h2>Save roster &amp; rebuild schedule</h2><p class="help">Keep existing team IDs and logos. Roster changes replace the schedule and rebalance referee duties.</p>
+<label class="check-label"><input type="checkbox" name="confirmReset" value="yes" required>I confirm: save these teams and replace the current schedule.</label><button class="btn" id="save-roster">Save teams &amp; regenerate schedule</button></section>
+<% } %></form>
+<p id="icon-upload-status" role="status" aria-live="polite" class="help">Photos are resized automatically. Maximum original size: 5 MiB. Save roster changes before uploading logos.</p>
+<% for(const team of teams){ %><form id="icon-form-<%= team.id %>" method="POST" action="/admin/team/<%= team.id %>/icon" enctype="multipart/form-data"></form><% } %>
+<% if(canSetup && hasSchedule){ %><section class="management"><form method="POST" action="/admin/generate-schedule"><h2>Reset &amp; regenerate schedule</h2><p class="help">Use the currently saved roster and logos. Unsaved roster edits above are not applied.</p><label class="check-label"><input type="checkbox" name="confirmReset" value="yes" required>Replace pending matches and referee assignments.</label><button class="btn btn-secondary">Reset &amp; regenerate schedule</button></form></section><% } %>
 <%- include('../_footer') %>

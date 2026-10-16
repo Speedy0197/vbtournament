@@ -1,30 +1,15 @@
-<%- include('../_header', { title: 'Enter Score' }) %>
-<a href="/admin" style="font-size:0.85rem;color:var(--muted)">← Back to Admin</a>
-
-<div style="margin-top:16px">
-  <div class="score-entry-header">
-    <span><%= match.team1_name %></span>
-    <span style="font-size:0.9rem;color:var(--muted)">vs</span>
-    <span><%= match.team2_name %></span>
-  </div>
-  <% if (match.label) { %><p style="color:var(--muted);margin-bottom:16px"><%= match.label %></p><% } %>
-
-  <form method="POST">
-    <% const sets = match.sets; %>
-    <% [1,2,3].forEach(n => { %>
-    <% const s = sets.find(x => x.set_number === n) || {}; %>
-    <div class="set-row">
-      <span class="set-label">Set <%= n %><% if (n === 3) { %> <em style="font-size:0.75rem">(if needed)</em><% } %></span>
-      <input type="number" name="s<%= n %>t1" min="0" max="30" value="<%= s.team1_score != null ? s.team1_score : '' %>" placeholder="–">
-      <span class="set-dash">–</span>
-      <input type="number" name="s<%= n %>t2" min="0" max="30" value="<%= s.team2_score != null ? s.team2_score : '' %>" placeholder="–">
-    </div>
-    <% }); %>
-
-    <div class="score-actions">
-      <button type="submit" class="btn">💾 Save Score</button>
-      <a href="/admin" class="btn btn-secondary">Cancel</a>
-    </div>
-  </form>
-</div>
-<%- include('../_footer') %>
+<%- include('../_header',{title:'Save result'}) %>
+<div class="score-shell"><div class="score-meta"><strong>Court <%= match.court %> · <%= ui.phase(match) %></strong><time><%= ui.time(match) %></time></div>
+<% if(error){ %><div class="alert alert-error" role="alert"><%= error %></div><% } %>
+<% if(typeof locked!=='undefined'&&locked){ %><p class="alert alert-info">This result is locked because the next round has been decided.</p><% } %>
+<% if(match.status==='done'){ %><p class="alert alert-info">Correct the scores and save. Unplayed bracket games update automatically. Changes that would replace a team in a game that has started or has scores are blocked.</p><% } %>
+<div class="score-panel"><%- include('../_referee',{m:match}) %>
+<form method="POST"><input type="hidden" name="scoreVersion" value="<%= scoreVersion %>"><table class="score-table"><thead><tr><th><span class="sr-only">Set</span></th><th><%- include('../_team',{team:ui.team(match,1),size:'hero',vertical:true}) %></th><th><%- include('../_team',{team:ui.team(match,2),size:'hero',vertical:true}) %></th></tr></thead><tbody>
+<% const timed=match.scoring_format==='timed'; const numbers=timed?Array.from({length:match.timed_periods||1},(_,i)=>i+1):match.fixed_sets===2?[1,2]:match.sets_to_win===1?[1]:[1,2,3]; %>
+<% for(const n of numbers){ const s=match.sets.find(s=>s.set_number===n)||{}; %><tr><td>Set <%= n %><span class="duration"><%= timed?'10 minutes':n===3?'To '+match.deciding_set_target+' · if needed':'To '+match.set_target %></span></td>
+<% for(const side of [1,2]){ %><td><input type="number" inputmode="numeric" name="s<%= n %>t<%= side %>" min="0" max="9999" aria-label="<%= match['team'+side+'_name'] %> score <%= n %>" value="<%= s['team'+side+'_score']!=null?s['team'+side+'_score']:'' %>" placeholder="–" <%= n<3?'required':'' %> <%= typeof locked!=='undefined'&&locked?'readonly':'' %>></td><% } %>
+</tr><% } %></tbody></table>
+<div class="score-actions"><button class="btn" <%= typeof locked!=='undefined'&&locked?'disabled':'' %>>Save result</button><a href="/admin" class="btn btn-secondary">Back</a></div>
+</form></div>
+<details class="score-help"><summary>Scoring reminder</summary><p><% if(timed){ %>Enter each timed set separately. Finish the rally at each buzzer; play one deciding rally if tied. A 1–1 match draw is allowed.<% }else{ %>First to win two sets. First two sets to <%= match.set_target %>, deciding set to <%= match.deciding_set_target %>, win by two. Leave the third set blank after 2–0.<% } %></p></details>
+</div><%- include('../_footer') %>

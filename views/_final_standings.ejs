@@ -1,0 +1,9 @@
+<section class="tournament-finish" aria-label="Final results">
+<article class="champion" aria-labelledby="winner-title">
+<div class="champion-main"><span class="finish-badge">Tournament complete</span><h2 id="winner-title"><span aria-hidden="true">🏆</span> Winner</h2><%- include('_team',{team:finished.rows[0].team,size:'hero',vertical:false}) %></div>
+<div class="champion-final"><h3>Final</h3><p><%= ui.team(finished.final,1).name %> <span class="muted">vs</span> <%= ui.team(finished.final,2).name %></p><%- include('_score',{m:finished.final}) %></div>
+</article>
+<div class="sectionhead"><h2 id="final-standings-title">Final standings</h2><span>All <%= finished.rows.length %> teams</span></div>
+<table class="final-standings" id="final-standings" aria-labelledby="final-standings-title"><thead><tr><th scope="col" class="final-place">Place</th><th scope="col">Team</th><th scope="col" class="final-finish">Finish</th></tr></thead>
+<tbody><% for(const row of finished.rows){ %><tr data-final-rank="<%= row.rank %>" class="<%= row.rank===1?'final-winner':'' %>"><td class="final-place"><%= row.rank===3?'=3':row.rank %></td><th scope="row"><%- include('_team',{team:row.team,size:'',vertical:false}) %></th><td class="final-finish"><%= row.label %></td></tr><% } %></tbody></table>
+</section>

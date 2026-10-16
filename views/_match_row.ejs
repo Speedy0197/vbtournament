@@ -1,21 +1,6 @@
-<div class="match-row">
-  <div class="match-row-teams" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-    <% if (m.team1_icon && m.team1_icon.startsWith('/')) { %><img src="<%= m.team1_icon %>" alt="" class="team-icon"><% } else if (m.team1_icon) { %><span class="team-icon-placeholder"><%= m.team1_icon %></span><% } else if (m.team1_name) { %><span class="team-icon-placeholder"><%= m.team1_name.charAt(0).toUpperCase() %></span><% } %>
-    <%= m.team1_name || '?' %> vs
-    <% if (m.team2_icon && m.team2_icon.startsWith('/')) { %><img src="<%= m.team2_icon %>" alt="" class="team-icon"><% } else if (m.team2_icon) { %><span class="team-icon-placeholder"><%= m.team2_icon %></span><% } else if (m.team2_name) { %><span class="team-icon-placeholder"><%= m.team2_name.charAt(0).toUpperCase() %></span><% } %>
-    <%= m.team2_name || '?' %>
-    <% if (m.label) { %> <span class="badge badge-<%= m.phase.includes('gold') ? 'gold' : 'silver' %>"><%= m.label %></span><% } %>
-    <% if (m.court) { %> <span class="badge badge-pending">Feld <%= m.court %></span><% } %>
-  </div>
-  <div class="match-row-score">
-    <% if (m.sets && m.sets.length > 0) { %>
-      <%= m.sets.map(s => `${s.team1_score}–${s.team2_score}`).join(', ') %>
-    <% } else { %>
-      –
-    <% } %>
-  </div>
-  <div class="match-row-actions">
-    <span class="badge badge-<%= m.status %>"><%= m.status %></span>
-    <a href="/admin/match/<%= m.id %>/score" class="btn btn-sm">Score</a>
-  </div>
-</div>
+<article class="match-row">
+<div class="match-row-meta"><strong><%= ui.time(m)||ui.phase(m) %></strong><span>Court <%= m.court %><% if(ui.time(m)&&m.phase!=='group'){ %> · <%= ui.phase(m) %><% } %></span></div>
+<div class="match-row-teams"><%- include('_team',{team:ui.team(m,1),size:'small',vertical:false}) %><%- include('_team',{team:ui.team(m,2),size:'small',vertical:false}) %><%- include('_referee',{m}) %></div>
+<div class="match-row-score"><% if(m.status==='done'||m.sets.length){ %><%- include('_score',{m}) %><% }else{ %><span class="status">Scheduled</span><% } %></div>
+<% if(typeof admin!=='undefined' && admin){ %><div class="match-row-actions"><% if(ui.blocked(m,allMatches)){ %><span class="muted">Waiting</span><% }else{ %><a href="/admin/match/<%= m.id %>/score" class="btn btn-secondary btn-sm"><%= m.status==='done'?'Edit result':'Score' %></a><% } %></div><% } %>
+</article>

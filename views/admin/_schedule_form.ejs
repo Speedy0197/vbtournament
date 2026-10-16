@@ -1,0 +1,5 @@
+<form method="POST" action="/admin/generate-schedule" class="schedule-form">
+<h2>Reset &amp; regenerate schedule</h2><p class="help">Keep team names and logos. Replace pending matches and rebalance referee duties.</p>
+<% if(groupMatches.length){ %><label class="check-label"><input type="checkbox" name="confirmReset" value="yes" required>Replace the current schedule and referee assignments.</label><% } %>
+<button class="btn btn-secondary btn-sm" <%= [6,7].includes(teams.length)?'':'disabled' %>><%= groupMatches.length?'Reset & regenerate schedule':'Generate schedule' %></button>
+</form>
