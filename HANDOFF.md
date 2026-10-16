@@ -4,7 +4,7 @@ Prepared 16 October 2026 for continuing from a MacBook. The tournament is on 17 
 
 # Latest UI cleanup · 16 October 2026
 
-Removed the explanatory “Estimated times · 5-minute breaks between league rounds. Times update as results are saved.” line from public Scores at the user's request. The timing behavior is unchanged. All 37 Cloudflare/D1/gateway tests passed before deploying Worker version `2bca81ed-52d1-4709-9ad2-071520c92f8a`. Live verification confirmed the sentence is absent and the entire production state is identical before and after deployment: seven teams, 21 pending matches and no saved scores. The demonstration results and delay remain exclusively in the separate local preview database. No migration or Pages asset deployment was needed.
+Removed the explanatory timing paragraph and the visible “Auto-refresh · every 2 min” label from public Scores at the user's request. Automatic refresh still runs every 120 seconds while visible, and the manual Refresh scores button remains. All 37 Cloudflare/D1/gateway tests and both client refresh tests passed before deploying Worker version `693b7d22-15bb-4359-b895-4e4443c35ba2`. Live verification confirmed the label is absent, the refresh marker and client script remain, and the entire production state is identical before and after deployment: seven teams, 21 pending matches and no saved scores. The demonstration results and delay remain exclusively in the separate local preview database. No migration or Pages asset deployment was needed.
 
 # Adaptive league timing
 
@@ -105,7 +105,7 @@ The public /api/state endpoint is read-only and returns teams, matches with sets
 | --- | --- |
 | Account ID | 0e617072989f0ec7b25a41cbb3cbff41 |
 | Worker/service name | petrus-volleyball |
-| Worker version released 16 October | 2bca81ed-52d1-4709-9ad2-071520c92f8a |
+| Worker version released 16 October | 693b7d22-15bb-4359-b895-4e4443c35ba2 |
 | D1 binding | DB |
 | D1 database name | petrus-volleyball |
 | D1 database ID | b32936df-779b-4dbd-8e65-290ddae0236d |

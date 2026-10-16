@@ -1,5 +1,5 @@
 <%- include('_header',{title:'Scores',refresh:true}) %>
-<div class="topline"><h1>Scores</h1><div class="sync"><span>Auto-refresh · every 2 min</span><a class="btn btn-secondary btn-sm" href="/">Refresh scores</a></div></div>
+<div class="topline"><h1>Scores</h1><div class="sync"><a class="btn btn-secondary btn-sm" href="/">Refresh scores</a></div></div>
 <% const finished=ui.finalResults(teams,matches); const courtMatches=ui.nextByCourt(matches); const showingIds=new Set(courtMatches.map(m=>m.id)); const pending=matches.filter(m=>m.status==='pending'&&!showingIds.has(m.id)); const completed=matches.filter(m=>m.phase==='group'&&m.status==='done').reverse(); const playoffs=matches.filter(m=>m.phase!=='group'); %>
 <% if(finished){ %><%- include('_final_standings',{finished}) %><% }else{ %>
 <div class="sectionhead"><h2>Next on court</h2></div>

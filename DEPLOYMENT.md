@@ -2,11 +2,11 @@
 
 The fixed tournament for **17 October 2026** is live at [volleyball.florian-zug.de](https://volleyball.florian-zug.de). Admin: [/admin](https://volleyball.florian-zug.de/admin). QR code: [/qr](https://volleyball.florian-zug.de/qr). The original Workers address and [Pages gateway](https://petrus-volleyball.pages.dev) remain available.
 
-Worker version: `2bca81ed-52d1-4709-9ad2-071520c92f8a`, deployed 16 October 2026. Migrations 0001–0006 are applied.
+Worker version: `693b7d22-15bb-4359-b895-4e4443c35ba2`, deployed 16 October 2026. Migrations 0001–0006 are applied.
 
 ## Latest release · public timing text cleanup
 
-Removed the explanatory timing sentence below “Next on court” from public Scores. The user approved this text-only change after viewing the isolated local demo. All 37 Cloudflare/D1/gateway tests passed. Live verification confirmed the sentence is gone, normal court times still render, and the complete `/api/state` response is identical before and after deployment: seven teams, 21 pending matches and no saved sets. Demo results and their simulated delay remain local. No database migration or Pages deployment was required.
+Removed the explanatory timing sentence below “Next on court” and the visible “Auto-refresh · every 2 min” label from public Scores. Automatic refresh remains enabled every 120 seconds, and the manual Refresh scores button remains. All 37 Cloudflare/D1/gateway tests and both client refresh tests passed. Live verification confirmed the label is gone, the refresh marker and client script remain, and the complete `/api/state` response is identical before and after deployment: seven teams, 21 pending matches and no saved sets. Demo results and their simulated delay remain local. No database migration or Pages deployment was required.
 
 ## Five-minute breaks and adaptive timing
 
