@@ -3,7 +3,6 @@
 <% const finished=ui.finalResults(teams,matches); const courtMatches=ui.nextByCourt(matches); const showingIds=new Set(courtMatches.map(m=>m.id)); const pending=matches.filter(m=>m.status==='pending'&&!showingIds.has(m.id)); const completed=matches.filter(m=>m.phase==='group'&&m.status==='done').reverse(); const playoffs=matches.filter(m=>m.phase!=='group'); %>
 <% if(finished){ %><%- include('_final_standings',{finished}) %><% }else{ %>
 <div class="sectionhead"><h2>Next on court</h2></div>
-<% if(matches.some(m=>m.phase==='group'&&m.status!=='done')){ %><p class="help">Estimated times · 5-minute breaks between league rounds. Times update as results are saved.</p><% } %>
 <div class="courts"><% for(const court of [1,2]){ const m=courtMatches.find(m=>m.court===court); if(m){ %><%- include('_court',{m,admin:false,allMatches:matches}) %>
 <% }else{ %><article class="court"><div class="court-heading"><strong>Court <%= court %></strong></div><p class="empty">The schedule will appear here.</p></article><% }} %></div>
 <div class="main-columns"><%- include('_standings',{rows:standings.A,caption:'League standings',offset:0,placement:false}) %>

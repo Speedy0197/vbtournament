@@ -2,9 +2,13 @@
 
 The fixed tournament for **17 October 2026** is live at [volleyball.florian-zug.de](https://volleyball.florian-zug.de). Admin: [/admin](https://volleyball.florian-zug.de/admin). QR code: [/qr](https://volleyball.florian-zug.de/qr). The original Workers address and [Pages gateway](https://petrus-volleyball.pages.dev) remain available.
 
-Worker version: `9dff8e41-5314-4e84-829d-7b1069fea100`, deployed 16 October 2026. Migrations 0001–0006 are applied.
+Worker version: `2bca81ed-52d1-4709-9ad2-071520c92f8a`, deployed 16 October 2026. Migrations 0001–0006 are applied.
 
-## Latest release · five-minute breaks and adaptive timing
+## Latest release · public timing text cleanup
+
+Removed the explanatory timing sentence below “Next on court” from public Scores. The user approved this text-only change after viewing the isolated local demo. All 37 Cloudflare/D1/gateway tests passed. Live verification confirmed the sentence is gone, normal court times still render, and the complete `/api/state` response is identical before and after deployment: seven teams, 21 pending matches and no saved sets. Demo results and their simulated delay remain local. No database migration or Pages deployment was required.
+
+## Five-minute breaks and adaptive timing
 
 The user approved five-minute breaks between league rounds. The deployed update projects the next round five minutes after both court results are saved, using the later timestamp and retaining at least 20 minutes of play per round. Longer breaks carry forward after the following round is scored. Result corrections keep their original timestamp. The public page, Admin, score entry, print and API use the same projected timetable; readings never rebuild pairings or modify stored matches.
 

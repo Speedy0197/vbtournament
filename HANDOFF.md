@@ -2,7 +2,11 @@
 
 Prepared 16 October 2026 for continuing from a MacBook. The tournament is on 17 October 2026, Europe/Berlin. The five-minute-break/adaptive-timing update is implemented, tested and deployed; see the update below.
 
-# Latest deployed update · adaptive league timing
+# Latest UI cleanup · 16 October 2026
+
+Removed the explanatory “Estimated times · 5-minute breaks between league rounds. Times update as results are saved.” line from public Scores at the user's request. The timing behavior is unchanged. All 37 Cloudflare/D1/gateway tests passed before deploying Worker version `2bca81ed-52d1-4709-9ad2-071520c92f8a`. Live verification confirmed the sentence is absent and the entire production state is identical before and after deployment: seven teams, 21 pending matches and no saved scores. The demonstration results and delay remain exclusively in the separate local preview database. No migration or Pages asset deployment was needed.
+
+# Adaptive league timing
 
 The user requested five-minute breaks between league rounds and adaptive times after entering results. Both courts remain synchronized. A round's next start is projected five minutes after the later saved result, rounded up to the next minute and never earlier than the current round's 20-minute playing estimate. All following rounds and the overall finish estimate shift together. A longer break is reflected once the following round's results are saved; the app does not observe actual starts. Save results promptly, since delayed entry also delays the estimates. Corrections retain the original finish timestamp and do not move the timetable.
 
@@ -101,7 +105,7 @@ The public /api/state endpoint is read-only and returns teams, matches with sets
 | --- | --- |
 | Account ID | 0e617072989f0ec7b25a41cbb3cbff41 |
 | Worker/service name | petrus-volleyball |
-| Worker version released 16 October | 9dff8e41-5314-4e84-829d-7b1069fea100 |
+| Worker version released 16 October | 2bca81ed-52d1-4709-9ad2-071520c92f8a |
 | D1 binding | DB |
 | D1 database name | petrus-volleyball |
 | D1 database ID | b32936df-779b-4dbd-8e65-290ddae0236d |
