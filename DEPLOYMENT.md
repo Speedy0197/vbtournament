@@ -2,9 +2,17 @@
 
 The fixed tournament for **17 October 2026** is live at [volleyball.florian-zug.de](https://volleyball.florian-zug.de). Admin: [/admin](https://volleyball.florian-zug.de/admin). QR code: [/qr](https://volleyball.florian-zug.de/qr). The original Workers address and [Pages gateway](https://petrus-volleyball.pages.dev) remain available.
 
-Worker version: `693b7d22-15bb-4359-b895-4e4443c35ba2`, deployed 16 October 2026. Migrations 0001–0006 are applied.
+Worker version: `6a7e95de-c785-4709-995e-daeef8f4d0da`, deployed 20 October 2026. Pages deployment: `0bfddab9.petrus-volleyball.pages.dev`. Migrations 0001–0006 remain applied; this release needed no migration.
 
-## Latest release · public timing text cleanup
+## Latest release · single-set saving and immediate score updates
+
+Source commit `e54e622ea48d5ba65774b5d9fb0973d44973a3fc` is on main. Score entry keeps the same rows, Save result and Back, while allowing a completed set to be saved with later rows blank. Shorter or extended sets such as 15–12 and 29–27 are accepted without editing rule settings. Partial matches stay active; their completion timestamp remains unset and dependent games wait for the complete match result. Atomic conflict and stale-form checks remain in both persistence adapters.
+
+The public display uses one compact current standings table with W/D/L and each team once, including places 5–7. A committed score save sends a BroadcastChannel notification with a storage-event fallback to immediately refresh same-origin tabs in the same browser. Other devices compare the score version every five seconds while visible and refresh only after a change. Admin forms do not auto-refresh. Five-minute breaks and adaptive league timing from the newer main commits are preserved.
+
+All 141 tests passed: 96 local SQLite/client/UI tests and 45 compiled Cloudflare/D1/gateway tests. An isolated browser demo measured the second tab's request 72 ms after a successful score POST, with no intervening poll. Worker and Pages assets were both deployed using `npm run deploy:cloudflare` and `npm run deploy:domain`. Read-only live verification on the custom domain, Workers and Pages hosts confirmed matching client/CSS asset hashes, the five-second refresh marker and matching state-version headers, seven final-standing rows and working scores/login/QR routes. All seven logos were accessible on the custom domain. The entire production state was identical before and after deployment: seven teams, 27 completed matches and 55 sets. No production scores, secrets, schedule or database schema were changed.
+
+## Earlier release · public timing text cleanup
 
 Removed the explanatory timing sentence below “Next on court” and the visible “Auto-refresh · every 2 min” label from public Scores. Automatic refresh remains enabled every 120 seconds, and the manual Refresh scores button remains. All 37 Cloudflare/D1/gateway tests and both client refresh tests passed. Live verification confirmed the label is gone, the refresh marker and client script remain, and the complete `/api/state` response is identical before and after deployment: seven teams, 21 pending matches and no saved sets. Demo results and their simulated delay remain local. No database migration or Pages deployment was required.
 
@@ -30,11 +38,11 @@ Migration 0006 adds nullable `matches.completed_at` and preserves existing resul
 The registered teams are Grüne Gurken, Hochball, Halb Netz Halb Aus, Netzfetzer, Netzflüsterer, Blockwürstchen and Petrus Team 26. The live schedule was previously generated at the user's request. The UI release preserved all seven team IDs and uploaded logos, all 21 match IDs and pairings, scores and referee assignments.
 
 - One league: 21 games, six games per team, across two courts.
-- Eleven 20-minute slots from 10:00 to 13:40, before breaks or delays. Each game has two separate 10-minute sets, switching sides immediately.
+- Eleven 20-minute rounds from 10:00 to an initial 14:30 finish, including five-minute breaks between rounds. Each game has two separate 10-minute sets, switching sides immediately. Saved completion times can shift the remaining estimates.
 - Finish the rally at the buzzer. Any lead wins a timed set; if tied, play one deciding rally. Reset to 0–0 for set two. A 2–0 win earns two league points; a 1–1 draw earns one each. Rank by league points, point difference, points scored, then team registration order.
 - Court 1 then runs semifinal 1 (1st vs 4th), semifinal 2 (2nd vs 3rd), and the final.
 - Court 2 hosts a fresh round robin for places 5–7: each pair plays once.
-- All semifinals, the final and placement games require two set wins: 25 / 25 / 15, win by two. A 1–1 split remains active until the deciding set is complete.
+- All semifinals, the final and placement games require two set wins. The planning defaults are 25 / 25 / 15, win by two; score entry accepts the completed sets actually played when rulings change. A 1–1 split remains active until the deciding set is complete.
 - Later matches have a planning estimate of 40 minutes each. With 65 minutes reserved for breaks and delays, the seven-team estimate finishes at 16:45. Set-based games have no time limit.
 
 There are no mode choices or editable playoff rules. Admin test-data tools have been removed. The Teams & setup page supports roster editing, adding/replacing/removing teams and rebuilding the schedule before play starts. Saving requires an explicit reset confirmation and a current roster version. Existing team IDs and logos are retained for teams that remain. Detailed rules remain hidden from the public scores page.
@@ -63,7 +71,7 @@ Every league game has a third team refereeing while idle on both courts. With se
 
 Court 1 semifinal 1 uses the second league seed as referee; semifinal 2 uses the loser of semifinal 1; the final uses the loser of semifinal 2. Correcting semifinal 1 refreshes semifinal 2's referee while semifinal 2 remains pending and unscored. Court 2 uses the third placement team; the six-team fallback uses the third league seed, subject to availability.
 
-Score entry has only **Save result** and **Back**. Opening a score form or returning with Back never marks a match active or saves anything. Save result requires both timed sets, or a complete 2–0 / 2–1 point-based result. The deciding third set fields remain available. Incomplete results are rejected without changing stored scores; impossible terminal scores such as 30–10 in a set to 25 are rejected. Saved results survive a failed bracket-creation attempt, with a retry action in Admin.
+Score entry has only **Save result** and **Back**. Opening a score form or returning with Back never marks a match active or saves anything. Save result accepts one completed set with later rows blank, keeping the match active until both timed sets or two playoff/placement set wins are recorded. The deciding third set fields remain available. Scores reflect the points actually played, including spontaneous target changes; tied sets, incomplete pairs, non-integers, gaps and an extra third set after 2–0 are rejected. Completed-game corrections must remain complete. Saved results survive a failed bracket-creation attempt, with a retry action in Admin.
 
 Completed games have an **Edit result** action. Corrected league results recalculate standings and reseed affected pending semifinals and placement games. Correcting a semifinal winner updates a pending final and, where still pending, semifinal 2’s referee. A correction is rejected if it would replace a participant in an active, scored or completed dependent game. Unaffected played games retain their match IDs, team orientation, scores and historical referee. Corrections that leave later participants unchanged remain available. Open score forms include a version check; stale forms and concurrent bracket writes cannot overwrite newer teams or results. Correction and bracket changes commit atomically in SQLite and D1, with rollback on failure. The complete schedule, including pending matches and referee duties, is available at [/admin/print](https://petrus-volleyball.post8070.workers.dev/admin/print).
 

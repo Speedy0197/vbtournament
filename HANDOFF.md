@@ -1,8 +1,14 @@
 # Petrus Volleyball code and deployment handoff
 
-Updated 20 October 2026 after the tournament on 17 October, Europe/Berlin. The worktree adds single-set saving, immediate same-browser score updates and a compact public standings layout on top of the deployed adaptive-timing update. Release verification is in progress.
+Updated 20 October 2026 after the tournament on 17 October, Europe/Berlin. Single-set saving, immediate same-browser score updates and the compact public standings layout are deployed on top of the adaptive-timing update and pushed to main.
 
-# Latest UI cleanup · 16 October 2026
+# Latest release · 20 October 2026
+
+Source commit `e54e622ea48d5ba65774b5d9fb0973d44973a3fc` preserves the original score form and accepts one completed set at a time, including shorter or extended scores such as 15–12 and 29–27. Partial matches remain active and do not record a finish timestamp or advance the bracket. The compact public table retains W/D/L and lists each team once. Same-origin tabs in one browser receive immediate save notifications; other devices check for changed scores every five seconds while visible.
+
+All 141 tests passed (96 local and 45 compiled Cloudflare/D1/gateway), retaining adaptive timing and five-minute breaks from the newer main commits. Worker version `6a7e95de-c785-4709-995e-daeef8f4d0da` and Pages deployment `0bfddab9.petrus-volleyball.pages.dev` are live. No migration, schedule reset or secret change was needed. Read-only HTTPS checks on the custom domain, Workers address and Pages address confirmed matching deployed client/CSS assets, score-version headers, all seven final-standing rows, login and QR pages, and all seven logos. The entire production /api/state response was identical before and after deployment: seven teams, 27 completed matches and 55 saved sets. No sample results were submitted to production.
+
+# Earlier UI cleanup · 16 October 2026
 
 Removed the explanatory timing paragraph and the visible “Auto-refresh · every 2 min” label from public Scores at the user's request. Automatic refresh still runs every 120 seconds while visible, and the manual Refresh scores button remains. All 37 Cloudflare/D1/gateway tests and both client refresh tests passed before deploying Worker version `693b7d22-15bb-4359-b895-4e4443c35ba2`. Live verification confirmed the label is absent, the refresh marker and client script remain, and the entire production state is identical before and after deployment: seven teams, 21 pending matches and no saved scores. The demonstration results and delay remain exclusively in the separate local preview database. No migration or Pages asset deployment was needed.
 
@@ -30,7 +36,7 @@ Mac access checked: Node 24.14.0 is available and `npm ci` installed the locked 
 
 The released application's source is published on the main branch of https://github.com/Speedy0197/vbtournament, including the adaptive-timing update developed from commit aadd9e116fa2796d6723b92762192138ea763451. The private ChatGPT handoff also retains a source snapshot captured before the GitHub publication. The earlier UI release was developed from commit a0f39c1be4bdb8da6356ba955af78384b22d1d22.
 
-At the last live read-only check on 16 October, production had seven teams and 21 pending league matches, with no saved scores. All pairings were unique. Each team had six games and three referee duties, with no simultaneous player/referee conflicts. The demo results described below exist only locally. Re-read /api/state before treating these counts as current on tournament day.
+The live read-only release check on 20 October found seven teams, all 27 matches completed and 55 saved sets; the entire production state was preserved during deployment. The earlier 16 October pre-tournament check had 21 pending league matches with no scores. Re-read /api/state before treating either snapshot as current. The demo results described below exist only locally.
 
 # Fixed tournament rules
 
@@ -105,12 +111,12 @@ The public /api/state endpoint is read-only and returns teams, matches with sets
 | --- | --- |
 | Account ID | 0e617072989f0ec7b25a41cbb3cbff41 |
 | Worker/service name | petrus-volleyball |
-| Worker version released 16 October | 693b7d22-15bb-4359-b895-4e4443c35ba2 |
+| Worker version released 20 October | 6a7e95de-c785-4709-995e-daeef8f4d0da |
 | D1 binding | DB |
 | D1 database name | petrus-volleyball |
 | D1 database ID | b32936df-779b-4dbd-8e65-290ddae0236d |
 | Pages project | petrus-volleyball |
-| Latest Pages deployment | e0078731.petrus-volleyball.pages.dev |
+| Latest Pages deployment | 0bfddab9.petrus-volleyball.pages.dev |
 | Pages service binding | TOURNAMENT points to petrus-volleyball Worker |
 | Canonical BASE_URL | https://volleyball.florian-zug.de |
 | Production admin secret name | ADMIN_PIN |
@@ -186,7 +192,7 @@ These are demonstration results, not actual tournament results. If recreating th
 
 # Continuing work
 
-The user approved the maintenance changes on 20 October: preserve the score form, save one completed set at a time without fixed-point errors, update the second screen immediately, keep W/D/L and show places 5–7 once within the main public view. Preserve the custom domain, admin password and production data. No schema migration or data reset is needed. Deploy both Worker and Pages assets when deployment is authorized; the current worktree has not been deployed. On future requests, read the current code/state, change only what was requested and verify both Node and compiled Cloudflare behavior.
+The user approved and requested deployment of the maintenance changes on 20 October: preserve the score form, save one completed set at a time without fixed-point errors, update the second screen immediately, keep W/D/L and show places 5–7 once within the main public view. Both Worker and Pages assets are deployed and the source is committed and pushed to main. The custom domain, admin password and complete production data are preserved. No schema migration or data reset was needed. On future requests, read the current code/state, change only what was requested and verify both Node and compiled Cloudflare behavior.
 
 A starting prompt for a new ChatGPT conversation:
 
