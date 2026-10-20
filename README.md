@@ -30,6 +30,8 @@ The suites cover local SQLite, the compiled Cloudflare Worker/D1 and the custom-
 
 Score entry keeps all set rows and the Save result button. Save after one completed set and leave later sets blank; reopen the same match to continue. Enter the points actually played, including 15–12 and 29–27. Incomplete matches stay in progress and do not advance the bracket. The Scores page shows each team once with W/D/L. Another tab in the same browser and origin updates immediately after a successful save; other devices check for changes every five seconds while visible.
 
+Admin’s **Swap upcoming matches** control exchanges two league games, two semifinals or two placement games. Both must be unstarted with no saved scores. Court, order, timetable and referee duties update together; swaps that double-book players or conflict with a started referee duty are refused. Completed results are preserved. Apply migration `0007_match_order.sql` to D1 before deploying this feature; SQLite upgrades automatically. See HANDOFF.md for current release status.
+
 ## Deploy an update
 
 Authenticate with the Cloudflare account that owns the existing resources, then deploy from the project root:

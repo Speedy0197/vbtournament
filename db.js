@@ -73,6 +73,11 @@ if (!matchColumns.has('completed_at')) {
   db.transaction(() => db.exec(sql))();
 }
 
+if (!matchColumns.has('schedule_order')) {
+  const sql = require('node:fs').readFileSync(path.join(__dirname, 'migrations/0007_match_order.sql'), 'utf8');
+  db.transaction(() => db.exec(sql))();
+}
+
 const getScoringRules = () => ({ ...require('./tournament').TOURNAMENT_RULES });
 
 const getSetsForMatchStmt = db.prepare(
@@ -101,7 +106,7 @@ const getFullState = () => {
     LEFT JOIN teams t1 ON m.team1_id = t1.id
     LEFT JOIN teams t2 ON m.team2_id = t2.id
     LEFT JOIN teams r ON m.referee_team_id = r.id
-    ORDER BY m.id
+    ORDER BY coalesce(m.schedule_order,m.id),m.id
   `).all();
   for (const match of matches) {
     match.sets = getSetsForMatchStmt.all(match.id);
@@ -254,6 +259,19 @@ const correctScore = db.transaction((id, scores, expectedMatch = null) => {
   return {ok:true};
 });
 
+const swapMatches = db.transaction((firstId,secondId,expectedState) => {
+  const state=getFullState();
+  if(!expectedState||!sameState(state,expectedState))return {ok:false,error:'The schedule or a result changed. Reload Admin before swapping.'};
+  const plan=require('./schedule-swaps').planMatchSwap(state,firstId,secondId);
+  if(!plan.ok)return plan;
+  // Playoff labels are unique within a phase. Vacate both labels inside the
+  // transaction before assigning them to their new games.
+  for(const m of plan.updates)db.prepare('UPDATE matches SET label=NULL WHERE id=?').run(m.id);
+  for(const m of plan.updates)db.prepare('UPDATE matches SET schedule_order=?,court=?,label=?,referee_team_id=? WHERE id=?')
+    .run(m.schedule_order,m.court,m.label,m.referee_team_id,m.id);
+  return {ok:true};
+});
+
 const saveScores = db.transaction(scores => {
   // Test-fill requests may arrive with a stale list; preserve real results.
   for (const score of scores) {
@@ -277,7 +295,7 @@ const updateMatchReferee = db.transaction((id, teamId, expectedState = null) => 
 module.exports = {
   close: () => db.close(),
   saveTeamSetup, regenerateSchedule, withdrawTeam, insertBracketMatches,
-  replaceTeams, saveScore, correctScore, saveScores,
+  replaceTeams, saveScore, correctScore, saveScores, swapMatches,
   getScoringRules,
   getTournamentMode,
   setTournamentMode,

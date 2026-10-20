@@ -7,10 +7,11 @@ function nextByCourt(matches) {
   || matches.find(m=>m.court===court&&m.status==='pending')
   || [...matches].reverse().find(m=>m.court===court&&m.status==='done')).filter(Boolean);
 }
-function blocked(match,matches) { return match.phase!=='group' && match.status!=='done' && matches.some(m=>m.phase!=='group'&&m.court===match.court&&m.id<match.id&&m.status!=='done'); }
+const {compareMatches}=require('./tournament');
+function blocked(match,matches) { return match.phase!=='group' && match.status!=='done' && matches.some(m=>m.phase!=='group'&&m.court===match.court&&compareMatches(m,match)<0&&m.status!=='done'); }
 function adminQueue(matches) {
  const priority=m=>m.status==='active'?0:blocked(m,matches)?2:1;
- return matches.filter(m=>m.status!=='done').sort((a,b)=>priority(a)-priority(b)||a.id-b.id);
+ return matches.filter(m=>m.status!=='done').sort((a,b)=>priority(a)-priority(b)||compareMatches(a,b));
 }
 function result(match) { const sets=match.sets||[]; return {a:sets.filter(s=>s.team1_score>s.team2_score).length,b:sets.filter(s=>s.team2_score>s.team1_score).length}; }
 function finalResults(teams,matches) {
@@ -40,4 +41,4 @@ function finalResults(teams,matches) {
  if(rows.length!==count||rows.some(r=>!r.team)||new Set(rows.map(r=>r.team.id)).size!==count)return null;
  return {rows,final};
 }
-module.exports={finalResults,time,phase,team,referee,nextByCourt,blocked,adminQueue,result};
+module.exports={compareMatches,finalResults,time,phase,team,referee,nextByCourt,blocked,adminQueue,result};

@@ -2,9 +2,17 @@
 
 The fixed tournament for **17 October 2026** is live at [volleyball.florian-zug.de](https://volleyball.florian-zug.de). Admin: [/admin](https://volleyball.florian-zug.de/admin). QR code: [/qr](https://volleyball.florian-zug.de/qr). The original Workers address and [Pages gateway](https://petrus-volleyball.pages.dev) remain available.
 
-Worker version: `6a7e95de-c785-4709-995e-daeef8f4d0da`, deployed 20 October 2026. Pages deployment: `0bfddab9.petrus-volleyball.pages.dev`. Migrations 0001–0006 remain applied; this release needed no migration.
+Worker version: `a66ffcc0-2fa6-43b0-b5ec-dcf6b99f1b13`, deployed 20 October 2026. Pages deployment: `61118e5d.petrus-volleyball.pages.dev`. Migrations 0001–0007 are applied.
 
-## Latest release · single-set saving and immediate score updates
+## Latest release · upcoming-match swapping and Admin cleanup
+
+Admin offers **Swap upcoming matches**, collapsed below **Awaiting results**. Two league games, two semifinals or two placement games can exchange slots only while both are pending and have no saved sets. Games retain their IDs, participants, scores and finish timestamps. Court, order and labels move with the slots; affected referee duties follow the new schedule. Conflicting league swaps and cross-phase swaps are refused. Score corrections preserve the chosen order while updating seeded participants and bracket dependencies. Stale forms and concurrent saves are protected in both database adapters.
+
+Admin now shows one collapsed combined standings table, listing each team once, instead of a separate places 5–7 table and repeated league standings. Completed tournaments show their final standings without the additional provisional table.
+
+All 167 tests passed (109 local and 58 compiled Cloudflare/D1/gateway). Migration `0007_match_order.sql` adds nullable `matches.schedule_order`, retaining original ID order for every existing game. It was applied before deploying the Worker; Worker and Pages assets were then published using the existing resources and secret. Live read-only verification on the custom domain, Workers address and Pages address confirmed matching CSS/client assets, all seven final standings rows, working scores/login/QR pages and all logos accessible. Every pre-existing API state field is identical to the pre-release snapshot: seven teams, 27 completed games and 55 saved sets. All 27 new schedule-order values are null, and the database foreign-key check is clean. No sample scores, schedule reset or credential changes were made.
+
+## Earlier release · single-set saving and immediate score updates
 
 Source commit `e54e622ea48d5ba65774b5d9fb0973d44973a3fc` is on main. Score entry keeps the same rows, Save result and Back, while allowing a completed set to be saved with later rows blank. Shorter or extended sets such as 15–12 and 29–27 are accepted without editing rule settings. Partial matches stay active; their completion timestamp remains unset and dependent games wait for the complete match result. Atomic conflict and stale-form checks remain in both persistence adapters.
 

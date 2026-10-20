@@ -1,8 +1,20 @@
 # Petrus Volleyball code and deployment handoff
 
-Updated 20 October 2026 after the tournament on 17 October, Europe/Berlin. Single-set saving, immediate same-browser score updates and the compact public standings layout are deployed on top of the adaptive-timing update and pushed to main.
+Updated 20 October 2026 after the tournament on 17 October, Europe/Berlin. Upcoming-match swapping and the simplified Admin standings are deployed on top of single-set saving, immediate score updates and adaptive league timing. This release is versioned on main.
 
-# Latest release · 20 October 2026
+# Latest release · upcoming-match swapping · 20 October 2026
+
+Admin now offers **Swap upcoming matches** collapsed below **Awaiting results**. Select two league games, two semifinals or two placement games and press **Swap matches**. Both must still be pending with no saved sets. League games can exchange courts and rounds; semifinals and placements exchange their order within the existing phase. A final cannot move ahead of its semifinals. Swapping the same pair again restores their previous slots. Admin also uses one collapsed combined standings table, listing each team once, instead of a separate places 5–7 table plus full league standings. When the tournament is complete, only the final standings summary is shown.
+
+Match IDs, participants, scores and finish timestamps remain attached to their games. Slots exchange their position, court and label. The public screen, score-entry queue, print schedule and adaptive league timing use that order. Successful swaps use the existing immediate-tab notification and score-version polling. Old swap and score forms are rejected after affected schedule changes, and SQLite transactions / guarded D1 batches protect concurrent saves and roll back failed swaps.
+
+League swaps are refused if a team would play on both courts in one round. Referees in affected rounds are reassigned to idle teams where necessary; started/scored games keep their assignments. Manual changes can alter the original equal-duty totals. Semifinal referee duties follow the new order, including the six-team placement referee. Finish an active six-team placement game before swapping its semifinals. Later league-result corrections retain the manually chosen order while reseeding the original qualifying pairings.
+
+Migration **0007_match_order.sql** adds nullable `matches.schedule_order`; existing games fall back to their IDs without any schedule reset. SQLite applies it on startup. Migration 0007 is applied to the existing production D1 database. Worker version `a66ffcc0-2fa6-43b0-b5ec-dcf6b99f1b13` and Pages deployment `61118e5d.petrus-volleyball.pages.dev` are live. Both deployments are required for this release because Admin spacing adds CSS.
+
+Verification: the complete local suite passes 109 tests; the compiled Cloudflare/D1/gateway suite passes 58 tests, including shared swap scenarios for both event sizes, referee conflicts, placement order, semifinal corrections and advancement, stale forms, concurrent-result protection and transaction rollback. An isolated browser preview confirmed that swapping semifinals changes the next Court 1 game and its referee, the swap control follows Awaiting results, and the combined standings list each team once. Live read-only checks on the custom, Worker and Pages hosts confirmed matching deployed assets, seven final-standing rows, working scores/login/QR pages and all logos accessible. All pre-existing API state fields are identical before and after release: seven teams, 27 completed matches and 55 saved sets. Only the new nullable schedule-order field was added; it remains null for all 27 existing games. No production scores or pairings were submitted or changed, and foreign-key checks are clean.
+
+# Earlier release · single-set saving · 20 October 2026
 
 Source commit `e54e622ea48d5ba65774b5d9fb0973d44973a3fc` preserves the original score form and accepts one completed set at a time, including shorter or extended scores such as 15–12 and 29–27. Partial matches remain active and do not record a finish timestamp or advance the bracket. The compact public table retains W/D/L and lists each team once. Same-origin tabs in one browser receive immediate save notifications; other devices check for changed scores every five seconds while visible.
 
@@ -87,6 +99,7 @@ After a successful score save, the redirect to Admin carries a one-use notificat
 | db.js | Local better-sqlite3 persistence, migrations/compatibility and atomic guards. |
 | tournament.js | Fixed rules, round robin generation, balanced referees, winners and standings. |
 | score-corrections.js | Plans corrected results, dependency changes and protection of played matches. |
+| schedule-swaps.js | Plans exchanges of unplayed schedule slots and repairs affected referee duties. |
 | presentation.js | UI helpers, court/queue ordering and finalResults completion/ranking logic. |
 | cloudflare/worker.mjs | Cloudflare entry using nodejs_compat and cloudflare:node HTTP bridge. |
 | cloudflare/database.mjs | Async D1 adapter with transactional batches and concurrency guards. |
@@ -97,7 +110,7 @@ After a successful score save, the redirect to Admin carries a one-use notificat
 | scripts/build-cloudflare.mjs | Compiles strict EJS templates and bundles the Worker with esbuild; copies only approved public assets. |
 | scripts/build-domain-gateway.mjs | Builds the small Pages gateway and copies only style.css/client.js. |
 | cloudflare/domain-gateway/ | Pages _worker.js and its separate wrangler.jsonc. |
-| migrations/ | Production has 0001_initial through 0006_adaptive_timing. |
+| migrations/ | Production has 0001_initial through 0007_match_order. |
 | *.test.js, *.test.mjs and test-support/ | Local, D1/Worker, gateway and shared correction tests. |
 | DEPLOYMENT.md | Longer operational history and release notes. This handoff summarizes the latest state. |
 
@@ -111,12 +124,12 @@ The public /api/state endpoint is read-only and returns teams, matches with sets
 | --- | --- |
 | Account ID | 0e617072989f0ec7b25a41cbb3cbff41 |
 | Worker/service name | petrus-volleyball |
-| Worker version released 20 October | 6a7e95de-c785-4709-995e-daeef8f4d0da |
+| Worker version released 20 October | a66ffcc0-2fa6-43b0-b5ec-dcf6b99f1b13 |
 | D1 binding | DB |
 | D1 database name | petrus-volleyball |
 | D1 database ID | b32936df-779b-4dbd-8e65-290ddae0236d |
 | Pages project | petrus-volleyball |
-| Latest Pages deployment | 0bfddab9.petrus-volleyball.pages.dev |
+| Latest Pages deployment | 61118e5d.petrus-volleyball.pages.dev |
 | Pages service binding | TOURNAMENT points to petrus-volleyball Worker |
 | Canonical BASE_URL | https://volleyball.florian-zug.de |
 | Production admin secret name | ADMIN_PIN |
@@ -134,7 +147,7 @@ npm run deploy:cloudflare
 npm run deploy:domain
 ```
 
-Migration 0006 is already applied in production. On any other existing environment, run `npx wrangler d1 migrations apply petrus-volleyball --remote` before deploying code that needs it; this adds the nullable timestamp column without resetting data. The second deploy is required when CSS, client.js or gateway code changes, because the custom domain serves its own asset copies. The timing update changed Worker templates and server code, so it did not require a Pages asset deployment. Do not create a replacement D1 database, replace resources or reapply/reset production data as part of routine deployment.
+Migrations through 0007 are already applied in production. On any other existing environment, run `npx wrangler d1 migrations apply petrus-volleyball --remote` before deploying code that needs them; the nullable timestamp and match-order columns preserve existing data. The second deploy is required when CSS, client.js or gateway code changes, because the custom domain serves its own asset copies. The timing update changed Worker templates and server code, so it did not require a Pages asset deployment. Do not create a replacement D1 database, replace resources or reapply/reset production data as part of routine deployment.
 
 Pages commands must use the dedicated cloudflare/domain-gateway configuration. The deploy:domain script already supplies --cwd, --project-name and --branch main. Running a Pages project-create command from the root previously caused Wrangler to delegate to a Worker deployment. The Pages project already exists. Do not add account_id to the Pages config.
 
@@ -192,7 +205,7 @@ These are demonstration results, not actual tournament results. If recreating th
 
 # Continuing work
 
-The user approved and requested deployment of the maintenance changes on 20 October: preserve the score form, save one completed set at a time without fixed-point errors, update the second screen immediately, keep W/D/L and show places 5–7 once within the main public view. Both Worker and Pages assets are deployed and the source is committed and pushed to main. The custom domain, admin password and complete production data are preserved. No schema migration or data reset was needed. On future requests, read the current code/state, change only what was requested and verify both Node and compiled Cloudflare behavior.
+The user approved and requested deployment of upcoming-match swapping and the revised Admin layout on 20 October, with a commit to main and push. Both Worker and Pages assets are deployed, and migration 0007 is applied without resetting data. The custom domain, admin password, teams, logos and complete results are preserved. This follows the earlier maintenance release that preserved the score form, enabled single-set saves and immediate screen updates, and retained W/D/L with each public team listed once. On future requests, read the current code/state, change only what was requested and verify both Node and compiled Cloudflare behavior.
 
 A starting prompt for a new ChatGPT conversation:
 

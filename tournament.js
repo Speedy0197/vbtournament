@@ -1,4 +1,6 @@
 const TOURNAMENT_RULES = Object.freeze({ setTarget: 25, decidingSetTarget: 15, matchMinutes: 40, playoffSetsToWin: 2 });
+const matchOrder = match => match.schedule_order ?? match.id;
+const compareMatches = (a,b) => matchOrder(a)-matchOrder(b) || a.id-b.id;
 
 function getMatchWinner(sets, rules = null, setsToWin = rules?.sets_to_win ?? 2) {
   let t1Sets = 0, t2Sets = 0;
@@ -247,7 +249,7 @@ function generateLeagueSchedule(teamIds) {
 function applyLeagueTiming(matches) {
   const projected = matches.map(match => ({ ...match }));
   const rounds = [], counters = {};
-  for (const match of [...projected].sort((a,b) => a.id - b.id)) {
+  for (const match of [...projected].sort(compareMatches)) {
     if (match.phase !== 'group' || match.scoring_format !== 'timed' || match.timed_periods !== 2) continue;
     const slot = counters[match.court] || 0;
     counters[match.court] = slot + 1;
@@ -275,4 +277,4 @@ function applyLeagueTiming(matches) {
   return projected;
 }
 
-module.exports = { TOURNAMENT_RULES, getTournamentFormat, generateLeagueSchedule, applyLeagueTiming, assignLeagueReferees, getFixedSetWinner, getTimedWinner, generateRoundRobinSchedule, getMatchWinner, calculateStandings, generateRoundRobin, generateRoundsByRound };
+module.exports = { matchOrder, compareMatches, TOURNAMENT_RULES, getTournamentFormat, generateLeagueSchedule, applyLeagueTiming, assignLeagueReferees, getFixedSetWinner, getTimedWinner, generateRoundRobinSchedule, getMatchWinner, calculateStandings, generateRoundRobin, generateRoundsByRound };

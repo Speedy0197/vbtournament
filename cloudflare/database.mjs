@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import corrections from '../score-corrections.js';
+import swaps from '../schedule-swaps.js';
 const MATCH_SELECT = `SELECT m.*, t1.name AS team1_name, t1.icon_path AS team1_icon,
   t2.name AS team2_name, t2.icon_path AS team2_icon, r.name AS referee_name, r.icon_path AS referee_icon FROM matches m
   LEFT JOIN teams t1 ON m.team1_id = t1.id LEFT JOIN teams t2 ON m.team2_id = t2.id LEFT JOIN teams r ON m.referee_team_id = r.id`;
@@ -23,7 +24,7 @@ export function createDatabase(database) {
   const withSnapshot=async(key,state,writes)=>{
     const snapshot=corrections.correctionSnapshot(state),token=randomUUID();
     const eligible="(SELECT json_group_array(id) FROM (SELECT id FROM teams ORDER BY id))=?"
-      +" AND (SELECT json_group_array(json_array(id,phase,court,team1_id,team2_id,referee_team_id,status)) FROM (SELECT * FROM matches ORDER BY id))=?"
+      +" AND (SELECT json_group_array(json_array(id,phase,court,team1_id,team2_id,referee_team_id,status,schedule_order)) FROM (SELECT * FROM matches ORDER BY id))=?"
       +" AND (SELECT json_group_array(json_array(match_id,set_number,team1_score,team2_score)) FROM (SELECT * FROM sets ORDER BY match_id,set_number))=?";
     const guard='EXISTS(SELECT 1 FROM settings WHERE key=? AND value=?)';
     const result=await database.batch([
@@ -46,7 +47,7 @@ export function createDatabase(database) {
     },
     async getFullState() {
       const result = await database.batch([
-        stmt('SELECT * FROM teams ORDER BY group_name, id'), stmt(MATCH_SELECT + ' ORDER BY m.id'),
+        stmt('SELECT * FROM teams ORDER BY group_name, id'), stmt(MATCH_SELECT + ' ORDER BY coalesce(m.schedule_order,m.id),m.id'),
         stmt('SELECT * FROM sets ORDER BY match_id, set_number'),
       ]);
       const [teams, matches, sets] = result.map(r => r.results);
@@ -150,6 +151,18 @@ export function createDatabase(database) {
         ...plan.updates.map(m=>stmt('UPDATE matches SET team1_id=?,team2_id=?,referee_team_id=? WHERE id=? AND '+guard,m.team1_id,m.team2_id,m.referee_team_id,m.id,...args)),
       ]);
       return saved?{ok:true}:{ok:false,error:'The tournament changed while saving. Reload the score form and try again.'};
+    },
+
+    async swapMatches(firstId,secondId,expectedState) {
+      const state=await this.getFullState();
+      if(!expectedState||JSON.stringify(corrections.correctionSnapshot(state))!==JSON.stringify(corrections.correctionSnapshot(expectedState)))return {ok:false,error:'The schedule or a result changed. Reload Admin before swapping.'};
+      const plan=swaps.planMatchSwap(state,firstId,secondId);
+      if(!plan.ok)return plan;
+      const saved=await withSnapshot('match_swap_guard',state,(guard,args)=>[
+        ...plan.updates.map(m=>stmt('UPDATE matches SET label=NULL WHERE id=? AND '+guard,m.id,...args)),
+        ...plan.updates.map(m=>stmt('UPDATE matches SET schedule_order=?,court=?,label=?,referee_team_id=? WHERE id=? AND '+guard,m.schedule_order,m.court,m.label,m.referee_team_id,m.id,...args)),
+      ]);
+      return saved?{ok:true}:{ok:false,error:'The schedule or a result changed. Reload Admin before swapping.'};
     },
 
     async saveScores(scores) {

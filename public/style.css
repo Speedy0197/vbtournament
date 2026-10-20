@@ -1,5 +1,6 @@
 :root{--blue:#245fe3;--text:#15243a;--muted:#6b7e96;--border:#dce4ef;--surface:#fff;--bg:#f7f9fc;--radius:14px;--red:#b42318;--green:#17834b}
 *{box-sizing:border-box;margin:0;padding:0}[hidden]{display:none!important}
+.swap-matches{margin-bottom:24px}.swap-matches form,.swap-matches .help{max-width:760px}.swap-matches select{margin-bottom:14px}
 body{font-family:system-ui,-apple-system,Segoe UI,sans-serif;line-height:1.5;background:var(--bg);color:var(--text)}
 button,input,select{font:inherit}button,a,input,select,summary{touch-action:manipulation}a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}
 button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid #7da5ff;outline-offset:3px}

@@ -1,5 +1,5 @@
 <%- include('../_header',{title:'Admin',scoreSaved}) %>
-<% const allMatches=groupMatches.concat(bracketMatches).sort((a,b)=>a.id-b.id); const finished=ui.finalResults(teams,allMatches); const courtMatches=ui.nextByCourt(allMatches).filter(m=>m.status!=='done'); const awaiting=ui.adminQueue(allMatches); const completed=allMatches.filter(m=>m.status==='done').reverse(); %>
+<% const allMatches=groupMatches.concat(bracketMatches).sort(ui.compareMatches); const finished=ui.finalResults(teams,allMatches); const courtMatches=ui.nextByCourt(allMatches).filter(m=>m.status!=='done'); const awaiting=ui.adminQueue(allMatches); const completed=allMatches.filter(m=>m.status==='done').reverse(); const upcoming=allMatches.filter(m=>m.status==='pending'&&m.sets.length===0); const swapGroups=[{phase:'group',name:'League games'},{phase:'gold_sf',name:'Semifinals'},{phase:'placement',name:'Placement games'}].filter(g=>upcoming.filter(m=>m.phase===g.phase).length>1); %>
 <div class="admin-head"><div><h1>Match desk</h1><p><%= finished?'The tournament is complete. Review or correct results below.':'Enter results and keep both courts moving.' %></p></div><div class="admin-actions"><a class="btn btn-secondary btn-sm" href="/admin/setup">Teams &amp; setup</a><a class="btn btn-secondary btn-sm" href="/admin/print" target="_blank">Print schedule</a><a class="btn btn-ghost btn-sm" href="/admin/logout">Logout</a></div></div>
 <% if(error){ %><div class="alert alert-error" role="alert"><%= error %></div><% } %>
 <% if(finished){ %><%- include('../_final_standings',{finished}) %><% } %>
@@ -7,11 +7,17 @@
 <% if(groupMatches.some(m=>m.status!=='done')){ %><p class="help">Estimated times · 5-minute breaks. Save both court results promptly to update the next round together.</p><% } %>
 <% if(courtMatches.length){ %><div class="courts"><% for(const m of courtMatches){ %><%- include('../_court',{m,admin:true,allMatches}) %><% } %></div><% }else{ %><div class="empty"><% if(allMatches.length){ %>All scheduled games have results. Completed games can be corrected below.<% }else{ %>No games scheduled. <a href="/admin/setup">Open tournament setup</a> or generate the schedule below.<% } %></div><% } %>
 <% if(awaiting.length){ %><section aria-labelledby="awaiting-results"><div class="sectionhead"><h2 id="awaiting-results">Awaiting results</h2><span>Ready games first</span></div><% for(const m of awaiting){ %><%- include('../_match_row',{m,admin:true,allMatches}) %><% } %></section><% } %>
+<% if(swapGroups.length){ %><details class="management swap-matches"><summary>Swap upcoming matches</summary>
+<p class="help">Swap two league games, two semifinals or two placement games. Only unstarted games without saved scores can move. Referee duties update where needed; conflicting swaps are refused.</p>
+<form method="POST" action="/admin/swap-matches">
+<input type="hidden" name="scheduleVersion" value="<%= scheduleVersion %>">
+<% for(const field of [{name:'firstMatchId',label:'First match'},{name:'secondMatchId',label:'Swap with'}]){ %><label for="<%= field.name %>"><%= field.label %></label><select id="<%= field.name %>" name="<%= field.name %>" required><option value="">Select an upcoming match</option>
+<% for(const group of swapGroups){ %><optgroup label="<%= group.name %>"><% for(const m of upcoming.filter(m=>m.phase===group.phase)){ %><option value="<%= m.id %>"><%= ui.time(m)||ui.phase(m) %> · Court <%= m.court %> · <%= m.team1_name %> vs <%= m.team2_name %></option><% } %></optgroup><% } %>
+</select><% } %><button class="btn btn-secondary btn-sm">Swap matches</button></form></details><% } %>
 <% const semis=bracketMatches.filter(m=>m.phase==='gold_sf'); const needsBracket=allGroupDone&&(!semis.length||(semis.length===2&&semis.every(m=>m.status==='done')&&!bracketMatches.some(m=>m.phase==='gold_final'))); %>
 <% if(needsBracket){ %><form action="/admin/advance-bracket" method="POST" class="section-space"><button class="btn"><%= bracketMatches.length?'Retry bracket creation':'Seed semifinals' %></button></form><% } %>
 <% if(completed.length){ %><details class="section-space"><summary>Completed games (<%= completed.length %>)</summary><% for(const m of completed){ %><%- include('../_match_row',{m,admin:true,allMatches}) %><% } %></details><% } %>
-<% if(bracketMatches.length&&!finished){ %><%- include('../_placement_standings',{placementStandings}) %><% } %>
-<details class="section-space"><summary>League standings</summary><%- include('../_standings',{rows:standings.A,caption:'League standings',offset:0,placement:false}) %></details>
+<% if(!finished){ %><details class="section-space"><summary>Standings</summary><%- include('../_current_standings',{leagueRows:standings.A,placementRows:placementStandings}) %></details><% } %>
 <details class="management" <%= groupMatches.length?'':'open' %>><summary>Tournament setup · before play</summary>
 <div class="management-content"><span>Manage the roster, logos and schedule.</span><a class="btn btn-secondary btn-sm" href="/admin/setup">Edit teams</a></div>
 <% if(canSetup){ %><%- include('_schedule_form',{teams,groupMatches,mode}) %>

@@ -22,7 +22,7 @@ const viewLocals = {
   _current_standings: ['leagueRows','placementRows'],
   index: ['rules', 'mode', 'teams', 'matches', 'standings', 'placementStandings', 'groupNames', 'scoresVersion'],
   login: ['error'], qr: ['qrDataUrl', 'baseUrl'],
-  'admin/index': ['rules', 'teams', 'groupMatches', 'bracketMatches', 'standings', 'placementStandings', 'allGroupDone', 'mode', 'groupNames', 'canWithdraw', 'canSetup', 'error', 'scoreSaved'],
+  'admin/index': ['rules', 'teams', 'groupMatches', 'bracketMatches', 'standings', 'placementStandings', 'allGroupDone', 'mode', 'groupNames', 'canWithdraw', 'canSetup', 'error', 'scoreSaved', 'scheduleVersion'],
   'admin/_schedule_form': ['teams', 'groupMatches', 'mode'],
   'admin/setup': ['teams', 'canSetup', 'rosterVersion', 'error', 'hasSchedule'], 'admin/match': ['match', 'error', 'locked', 'scoreVersion'],
   'admin/print': ['standings', 'placementStandings', 'groupMatches', 'bracketMatches', 'mode', 'groupNames', 'allGroupDone'],

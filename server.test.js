@@ -22,7 +22,7 @@ test('fixed tournament persists schedules and scores through restart', async t =
     assert.ok(path.basename(dir).startsWith('six-team-test-'));
     await fs.rm(dir, { recursive: true, force: true });
   });
-  for (const file of ['server.js', 'app.js', 'local-icons.js', 'db.js', 'tournament.js', 'presentation.js', 'score-corrections.js', 'views', 'migrations']) {
+  for (const file of ['server.js', 'app.js', 'local-icons.js', 'db.js', 'tournament.js', 'presentation.js', 'score-corrections.js', 'schedule-swaps.js', 'views', 'migrations']) {
     await fs.cp(path.join(__dirname, file), path.join(dir, file), { recursive: true });
   }
   const probe = http.createServer();

@@ -5,6 +5,7 @@ const { createHmac, createHash } = require('node:crypto');
 const QRCode = require('qrcode/lib/core/qrcode');
 const renderQR = require('qrcode/lib/renderer/svg-tag');
 const tournament = require('./tournament');
+const {correctionSnapshot,matchSnapshot}=require('./score-corrections');
 
 function validImage(file) {
   const b = file.buffer;
@@ -89,6 +90,7 @@ async function buildState() {
   return { teams, matches, standings, placementStandings, mode, groupNames, rules };
 }
 const stateVersion = state => createHash('sha256').update(JSON.stringify(state)).digest('hex');
+const scheduleVersion = state => stateVersion(correctionSnapshot(state));
 
 // ── Bracket Advancement ───────────────────────────────────────────────────────
 async function tryAdvanceBracket(attempt = 0) {
@@ -176,10 +178,19 @@ async function renderAdmin(res, error = null, scoreSaved = false) {
   res.render('admin/index', {
     teams, groupMatches, bracketMatches, standings, placementStandings, allGroupDone, mode, groupNames, rules,
     canSetup: setupOpen(matches), canWithdraw: teams.length === 7 && setupOpen(matches), error, scoreSaved,
+    scheduleVersion:scheduleVersion({teams,matches}),
   });
 }
 
 get('/admin', requireAdmin, async (req, res) => renderAdmin(res, req.query.advanceError ? 'Result saved. Bracket creation failed; use Retry bracket creation below.' : null, req.query.scoreSaved === '1'));
+
+post('/admin/swap-matches',requireAdmin,async(req,res)=>{
+  const state=await db.getFullState();
+  if(req.body.scheduleVersion!==scheduleVersion(state))return renderAdmin(res.status(409),'The schedule or a result changed. Reload Admin before swapping.');
+  const saved=await db.swapMatches(Number(req.body.firstMatchId),Number(req.body.secondMatchId),state);
+  if(!saved.ok)return renderAdmin(res.status(409),saved.error);
+  res.redirect('/admin?scoreSaved=1');
+});
 
 post('/admin/match-rules', requireAdmin, async (req, res) => {
   res.status(410).send('Record completed sets as played on the score form. No rule-setting step is required.');
@@ -243,7 +254,7 @@ async function earlierCourtMatch(match) {
   if (match.phase === 'group' || match.status === 'done') return false;
   const state = await db.getFullState();
   return state.matches.some(other => other.phase !== 'group' && other.court === match.court
-    && other.id < match.id && other.status !== 'done');
+    && tournament.compareMatches(other,match)<0 && other.status !== 'done');
 }
 
 async function activeConflict(match) {
@@ -253,7 +264,7 @@ async function activeConflict(match) {
 }
 
 // ── Score Entry ───────────────────────────────────────────────────────────────
-const scoreVersion = match => createHash('sha256').update(JSON.stringify([match.id,match.team1_id,match.team2_id,match.status,match.sets.map(s=>[s.set_number,s.team1_score,s.team2_score])])).digest('hex');
+const scoreVersion = match => createHash('sha256').update(matchSnapshot(match)).digest('hex');
 async function scoreMatch(id) {
   return tournament.applyLeagueTiming((await db.getFullState()).matches).find(match => match.id === id);
 }
