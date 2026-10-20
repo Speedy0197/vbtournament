@@ -63,7 +63,7 @@ module.exports=async function timingScenarios(t,{db,req,state,sql}) {
   });
   await t.test('invalid and stale submissions cannot change finish times or estimates',async()=>{
     const before=await state();
-    assert.equal((await req(route(games[4]),{s1t1:'20',s1t2:'18'})).status,400);
+    assert.equal((await req(route(games[4]),{s1t1:'20',s1t2:'20'})).status,400);
     assert.equal((await req(route(games[4]),{...scores,scoreVersion:'stale'})).status,409);
     assert.deepEqual(await state(),before);
   });

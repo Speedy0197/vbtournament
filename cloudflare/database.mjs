@@ -172,6 +172,8 @@ export function createDatabase(database) {
         if(corrections.matchSnapshot(actual)!==corrections.matchSnapshot(expectedMatch)||actual.status==='done'
           ||(actual.phase==='group'&&state.matches.some(m=>m.phase!=='group'))
           ||(actual.phase==='gold_sf'&&state.matches.some(m=>m.phase==='gold_final')))return false;
+        const participants=[actual.team1_id,actual.team2_id,actual.referee_team_id].filter(id=>id!=null);
+        if(state.matches.some(m=>m.id!==id&&m.status==='active'&&(m.court===actual.court||[m.team1_id,m.team2_id,m.referee_team_id].some(team=>participants.includes(team)))))return false;
         return withSnapshot('score_guard',state,(guard,args)=>[
           stmt('DELETE FROM sets WHERE match_id=? AND '+guard,id,...args),
           ...sets.map(s=>stmt('INSERT INTO sets(match_id,set_number,team1_score,team2_score) SELECT ?,?,?,? WHERE '+guard,id,s.n,s.t1,s.t2,...args)),

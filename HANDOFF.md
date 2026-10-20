@@ -1,6 +1,6 @@
 # Petrus Volleyball code and deployment handoff
 
-Prepared 16 October 2026 for continuing from a MacBook. The tournament is on 17 October 2026, Europe/Berlin. The five-minute-break/adaptive-timing update is implemented, tested and deployed; see the update below.
+Updated 20 October 2026 after the tournament on 17 October, Europe/Berlin. The worktree adds single-set saving, immediate same-browser score updates and a compact public standings layout on top of the deployed adaptive-timing update. Release verification is in progress.
 
 # Latest UI cleanup · 16 October 2026
 
@@ -41,12 +41,12 @@ The seven registered teams are Grüne Gurken, Hochball, Halb Netz Halb Aus, Netz
 - A league game can finish 2–0, 1–1 or 0–2. A win gives two league points; a draw gives one to each team. Rankings use league points, point difference, points scored, then stable team-ID order.
 - Seven teams play 21 league games in 11 rounds, initially estimated to end at 14:30 including ten five-minute breaks. Every pair plays once.
 - The top four qualify. Court 1 has semifinal 1 (1st versus 4th), semifinal 2 (2nd versus 3rd), then the final, sequentially.
-- All semifinals, the final and placement games are first to TWO set wins. Sets one and two are to 25; a deciding third set is to 15. Win by two, including extended scores. These games cannot draw.
+- All semifinals, the final and placement games are first to TWO set wins. The original plan was 25/25/15, win by two. Score entry now accepts completed sets as actually played, including spontaneous changes to the target or winning margin. These games cannot draw, and each saved completed set must be untied.
 - On Court 2, the bottom three play a fresh three-match round robin for places 5–7. League results are not carried over. Placement ranking uses the existing match-points and rally-point tie breakers.
 - There is no third-place match. The semifinal losers share third place: final ranks are 1, 2, =3, =3, 5, 6, 7.
 - The later set-based games have 40-minute planning estimates, not hard time limits. The initial seven-team finish estimate is 16:45: 50 minutes of league breaks and 15 more minutes for later breaks and delays. League delays shift this estimate.
 
-There are no public mode banners or detailed rule paragraphs, and no dynamic game-mode or playoff-rule controls. Earlier historical plans about groups, 25-minute slots or configurable formats are superseded.
+There are no public mode banners, detailed rule paragraphs, or dynamic game-mode/playoff-rule controls. The organiser does not need to change settings before entering shorter or extended scores. The target values exposed by /api/state are the original planning defaults, not score-entry limits. Earlier historical plans about groups, 25-minute slots or configurable formats are superseded.
 
 # Six-team fallback and referee assignments
 
@@ -60,7 +60,7 @@ Six-team operational dependency: play 5th versus 6th alongside semifinal 1 and F
 
 # Admin behavior and score corrections
 
-Score entry has only Save result and Back. Opening the form or using Back is read-only. Save result requires two completed timed sets, or a complete 2–0/2–1 point-based result. It rejects partial games, tied timed sets, a third set after a 2–0, invalid winning margins and impossible terminal scores such as 30–10 in a set to 25.
+Score entry retains the existing rows, Save result and Back. Opening the form or using Back is read-only. Save result accepts one completed set and leaves unplayed rows blank. Partial matches are stored as active; reopening the form restores their scores. Timed games finish after both sets, while playoffs and placements finish after two set wins. Score entry accepts 15–12, 29–27 and other scores actually played without target/margin validation. It still rejects tied completed sets, incomplete pairs, non-integers, gaps and a third set after 2–0. A correction to an already completed game must remain a complete result.
 
 Completed games have Edit result. A corrected league result recalculates the league and reseeds affected pending semifinals and placement games. Correcting a semifinal winner updates the pending final and pending referee dependencies. A correction is refused if it would replace a participant in an already active, scored or completed dependent game. Harmless corrections that leave those participants unchanged remain allowed. Unaffected played games retain IDs, orientation, scores and historical referees.
 
@@ -68,9 +68,9 @@ Score forms carry version guards. Corrections and bracket updates commit atomica
 
 Before play, teams can be added, removed, replaced and edited within the six/seven-team limit, and the schedule can be reset/regenerated with explicit confirmation. Those actions are blocked after any active/completed game or saved score. Logo updates remain available during the tournament.
 
-Admin prioritizes the next game ready for score entry, then other awaiting results; completed history is collapsed below. After every league, semifinal, final and placement match is done, both Scores and Admin display the winner, final set scores and all teams' final standings at the top. The public league table and coming-up panel are replaced. Corrections update this summary automatically. Admin retains a collapsed league table and completed-game editing.
+Admin prioritizes active games, then the next games ready for score entry; completed history is collapsed below. Active games block conflicting courts, players and referees, rechecked in the score transaction. Scores uses one compact standings table with W/D/L and each team once. During playoffs, the top four retain labeled league seed/results rows; places 5–7 use separately labeled provisional placement results. Public playoff/placement and league history remains available in collapsed details. After every game is done, Scores and Admin display the winner, final set scores and all final standings at the top. Corrections update this summary automatically.
 
-Public scores automatically refresh every two minutes while the tab is visible, plus a manual Refresh scores link. Admin forms do not auto-refresh. QR code and Admin login are separate pages. Team logos use their full aspect ratio and larger sizes.
+After a successful score save, the redirect to Admin carries a one-use notification marker. client.js sends a BroadcastChannel message and a storage-event fallback so another same-origin tab in the same browser reloads immediately, including hidden tabs. The marker is removed from the URL. Public pages also compare the /api/state X-Scores-Version header every five seconds while visible, reload only changed scores, pause polling while hidden and check immediately when visible again. Failed saves do not notify; temporary network failures keep the existing screen and retry. Admin forms never auto-refresh. QR code and Admin login remain separate pages. Logos retain their full aspect ratio; the public display uses compact sizes to fit every team.
 
 # Code map
 
@@ -87,7 +87,7 @@ Public scores automatically refresh every two minutes while the tab is visible, 
 | cloudflare/icons.mjs | Logos stored in D1 team_icons/icon_chunks; versioned cache URLs. |
 | local-icons.js | Local filesystem logo adapter. |
 | views/ | EJS public, Admin, score, setup, QR and print templates. _final_standings.ejs is the winner/overall-rankings partial. |
-| public/style.css and public/client.js | Responsive styling, score refresh, image resizing/uploads and roster controls. |
+| public/style.css and public/client.js | Compact public display, immediate tab synchronization, version polling, image resizing/uploads and roster controls. |
 | scripts/build-cloudflare.mjs | Compiles strict EJS templates and bundles the Worker with esbuild; copies only approved public assets. |
 | scripts/build-domain-gateway.mjs | Builds the small Pages gateway and copies only style.css/client.js. |
 | cloudflare/domain-gateway/ | Pages _worker.js and its separate wrangler.jsonc. |
@@ -97,7 +97,7 @@ Public scores automatically refresh every two minutes while the tab is visible, 
 
 Whenever adding an EJS partial or new template locals, update the viewLocals map in scripts/build-cloudflare.mjs. Local EJS rendering alone does not prove that strict compiled Worker templates work.
 
-The public /api/state endpoint is read-only and returns teams, matches with sets, league/placement standings, mode and rules. There is no separate frontend API project to deploy.
+The public /api/state endpoint is read-only and returns teams, matches with sets, league/placement standings, mode and planning-default rules. Its X-Scores-Version header matches the version embedded in the public HTML and changes when tournament state changes. There is no separate frontend API project to deploy. The new views/_current_standings.ejs partial is included in the strict Cloudflare template build.
 
 # Cloudflare resources and deployment
 
@@ -161,7 +161,9 @@ Opening this handoff gives context; it does not connect another chat to the Wind
 
 # Verification and current limits
 
-Latest full verification: 120 tests passed, comprising 83 local tests and 37 Cloudflare/gateway tests. Coverage includes adaptive synchronized league times, longer breaks and unchanged correction timestamps, complete six- and seven-team events, deciding third sets, rejection of placement draws/incomplete scores, referee scheduling, atomic setup/withdrawal, correction dependencies, stale forms/writers, rollback, compiled views, uploads, restart persistence, final-standings completion gating and corrected-final winner updates.
+The 16 October adaptive-timing release passed 120 tests (83 local and 37 Cloudflare/gateway). The maintenance worktree adds shared SQLite/D1 scenarios for partial-set saving, changed point targets, delayed bracket advancement, active-game conflicts including referee changes, stale forms, one-row-per-team standings, and successful-save notifications. Client tests cover immediate broadcasts, storage fallback, blocked storage, hidden tabs, polling and network retries. Coverage also includes synchronized league times, longer breaks, unchanged correction timestamps, six- and seven-team events, correction dependencies, rollback and restart persistence. Run both verification commands before deploying. Error traces from deliberately injected rollback/advancement failures are expected in passing test output.
+
+Maintenance verification on 20 October includes the newer adaptive-timing commits from main. All 141 tests passed: 96 local and 45 compiled Cloudflare/D1/gateway tests. Both deployment asset builds succeeded. The timing test closes its SQLite connection before removing temporary files on Windows, and shared SQLite/D1 scenarios ensure a partial set leaves completed_at null. In an isolated local browser demo, saving one 15–12 semifinal set triggered the second tab's page request 72 ms after the score POST completed, with no intervening state poll. All seven standings rows were visible in the desktop browser check. Production data was not used for this demo.
 
 After release, read-only checks confirmed HTTPS 200 for scores, QR, login and state; new CSS on the custom domain; and production state exactly unchanged. Earlier rehearsals also covered every possible missing-team fallback. Desktop and phone layouts were checked during UI work; actual venue connectivity and the organiser's own phone remain practical checks.
 
@@ -184,7 +186,7 @@ These are demonstration results, not actual tournament results. If recreating th
 
 # Continuing work
 
-The user's current assessment is that everything looks good. Preserve the fixed rules, custom domain, admin password and live data. Avoid speculative feature work before tournament day. On a future request, first read the supplied code and check the actual current live state, then change only what was requested and verify both Node and compiled Cloudflare behavior before deploying.
+The user approved the maintenance changes on 20 October: preserve the score form, save one completed set at a time without fixed-point errors, update the second screen immediately, keep W/D/L and show places 5–7 once within the main public view. Preserve the custom domain, admin password and production data. No schema migration or data reset is needed. Deploy both Worker and Pages assets when deployment is authorized; the current worktree has not been deployed. On future requests, read the current code/state, change only what was requested and verify both Node and compiled Cloudflare behavior.
 
 A starting prompt for a new ChatGPT conversation:
 

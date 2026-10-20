@@ -157,7 +157,7 @@ test('Cloudflare keeps completed results and icons across restarts', async t => 
     assert.equal((await upload(Buffer.from('<svg>not a PNG</svg>'))).status, 400);
     assert.equal((await state()).teams[0].icon_path, replacement);
   });
-  await t.test('hosted score entry is read-only and Save result rejects incomplete matches',async()=>{
+  await t.test('hosted score entry is read-only and Save result accepts one completed set',async()=>{
     const before=await state(),match=before.matches.find(m=>m.status==='pending');
     const route='/admin/match/'+match.id+'/score';
     const response=await request(route);
@@ -165,8 +165,10 @@ test('Cloudflare keeps completed results and icons across restarts', async t => 
     const html=await response.text();assert.match(html,/Save result/);
     assert.doesNotMatch(html,/Save progress|Finish game|Pause/);
     assert.deepEqual(await state(),before);
-    assert.equal((await request(route,{s1t1:'20',s1t2:'18'})).status,400);
-    assert.deepEqual(await state(),before);
+    assert.equal((await request(route,{s1t1:'20',s1t2:'18'})).status,302);
+    assert.equal((await state()).matches.find(m=>m.id===match.id).status,'active');
+    assert.equal((await state()).matches.find(m=>m.id===match.id).sets.length,1);
+    assert.equal((await request(route,{s1t1:'20',s1t2:'18',s2t1:'18',s2t2:'20'})).status,302);
   });
 
   await t.test('hosted rules are fixed and pause controls preserve entered results', async () => {
@@ -231,7 +233,7 @@ test('Cloudflare keeps completed results and icons across restarts', async t => 
     assert.ok(semis.every(m => m.scoring_format === 'sets' && m.set_target === 25 && m.court === 1 && m.sets_to_win === 2));
     assert.equal((await request('/admin/match/' + semis[1].id + '/score')).status,409);
     const beforeLocked = await state();
-    assert.equal((await request('/admin/match/'+semis[0].id+'/score',{s1t1:'30',s1t2:'10',s2t1:'30',s2t2:'10'})).status,400);
+    assert.equal((await request('/admin/match/'+semis[0].id+'/score',{s1t1:'30',s1t2:'30',s2t1:'30',s2t2:'10'})).status,400);
     assert.deepEqual(await state(),beforeLocked);
     for (const semi of semis) {
       const route='/admin/match/' + semi.id + '/score';
@@ -253,10 +255,10 @@ test('Cloudflare keeps completed results and icons across restarts', async t => 
     assert.ok(placement.every(m => m.court === 2 && m.scoring_format === 'sets' && m.fixed_sets === 0 && m.sets_to_win === 2));
     for (const [index, game] of placement.entries()) {
       const route = '/admin/match/' + game.id + '/score';
-      assert.equal((await request(route, {s1t1:'25',s1t2:'20'})).status,400);
-      assert.equal((await state()).matches.find(m=>m.id===game.id).status,'pending');
-      assert.equal((await request(route, {s1t1:'25',s1t2:'20',s2t1:index===0?'20':'25',s2t2:index===0?'25':'20'})).status,index===0?400:302);
-      assert.equal((await state()).matches.find(m=>m.id===game.id).status,index===0?'pending':'done');
+      assert.equal((await request(route, {s1t1:'25',s1t2:'20'})).status,302);
+      assert.equal((await state()).matches.find(m=>m.id===game.id).status,'active');
+      assert.equal((await request(route, {s1t1:'25',s1t2:'20',s2t1:index===0?'20':'25',s2t2:index===0?'25':'20'})).status,302);
+      assert.equal((await state()).matches.find(m=>m.id===game.id).status,index===0?'active':'done');
       if(index===0) assert.equal((await request(route, {s1t1:'25',s1t2:'20',s2t1:'20',s2t2:'25',s3t1:'15',s3t2:'13'})).status,302);
       assert.equal((await state()).matches.find(m=>m.id===game.id).status,'done');
     }

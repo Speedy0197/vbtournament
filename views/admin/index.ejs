@@ -1,4 +1,4 @@
-<%- include('../_header',{title:'Admin'}) %>
+<%- include('../_header',{title:'Admin',scoreSaved}) %>
 <% const allMatches=groupMatches.concat(bracketMatches).sort((a,b)=>a.id-b.id); const finished=ui.finalResults(teams,allMatches); const courtMatches=ui.nextByCourt(allMatches).filter(m=>m.status!=='done'); const awaiting=ui.adminQueue(allMatches); const completed=allMatches.filter(m=>m.status==='done').reverse(); %>
 <div class="admin-head"><div><h1>Match desk</h1><p><%= finished?'The tournament is complete. Review or correct results below.':'Enter results and keep both courts moving.' %></p></div><div class="admin-actions"><a class="btn btn-secondary btn-sm" href="/admin/setup">Teams &amp; setup</a><a class="btn btn-secondary btn-sm" href="/admin/print" target="_blank">Print schedule</a><a class="btn btn-ghost btn-sm" href="/admin/logout">Logout</a></div></div>
 <% if(error){ %><div class="alert alert-error" role="alert"><%= error %></div><% } %>

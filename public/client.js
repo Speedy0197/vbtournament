@@ -1,14 +1,45 @@
 (() => {
   const marker = document.querySelector('meta[name="scores-refresh"]');
-  if (!marker) return;
+  const saved = document.querySelector('meta[name="scores-saved"]');
+  if (!marker && !saved) return;
+  const storageKey = 'tournament-scores-updated';
+  let channel;
+  try { if (typeof BroadcastChannel === 'function') channel = new BroadcastChannel(storageKey); } catch (_) { /* Storage events remain available. */ }
+  if (saved) {
+    channel?.postMessage('scores-updated');
+    try { window.localStorage.setItem(storageKey, Date.now() + ':' + Math.random()); } catch (_) { /* BroadcastChannel works without storage. */ }
+    const url = new URL(window.location.href);
+    url.searchParams.delete('scoreSaved');
+    window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+  }
+  if (!marker) { channel?.close(); return; }
   const interval = Number(marker.content) * 1000;
-  if (!Number.isFinite(interval) || interval < 60000) return;
-  let timer;
+  if (!Number.isFinite(interval) || interval < 1000) return;
+  const version = document.querySelector('meta[name="scores-version"]')?.content;
+  let timer, checking = false, reloading = false;
+  function reload() {
+    if (reloading) return;
+    reloading = true;
+    clearTimeout(timer);
+    window.location.reload();
+  }
+  if (channel) channel.onmessage = event => { if (event.data === 'scores-updated') reload(); };
+  window.addEventListener('storage', event => { if (event.key === storageKey && event.newValue) reload(); });
   function schedule() {
     clearTimeout(timer);
-    if (!document.hidden) timer = setTimeout(() => window.location.reload(), interval);
+    if (!document.hidden && !reloading) timer = setTimeout(check, interval);
   }
-  document.addEventListener('visibilitychange', schedule);
+  async function check() {
+    if (document.hidden || reloading || checking) return;
+    checking = true;
+    try {
+      const response = await fetch('/api/state', { cache: 'no-store' });
+      const nextVersion = response.ok && response.headers.get('X-Scores-Version');
+      if (nextVersion && nextVersion !== version) reload();
+    } catch (_) { /* Keep the last scores visible and retry after reconnecting. */ }
+    finally { checking = false; schedule(); }
+  }
+  document.addEventListener('visibilitychange', () => { clearTimeout(timer); return document.hidden ? undefined : check(); });
   schedule();
 })();
 

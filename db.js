@@ -219,7 +219,12 @@ const replaceTeams = db.transaction((teams, mode = null) => {
   if (mode) setTournamentMode(mode);
 });
 const saveScore = db.transaction((id, sets, status, expectedMatch = null) => {
-  if(expectedMatch&&matchSnapshot(getMatchWithSets(id))!==matchSnapshot(expectedMatch))return false;
+  const actual=getMatchWithSets(id);
+  if(expectedMatch&&matchSnapshot(actual)!==matchSnapshot(expectedMatch))return false;
+  if(expectedMatch){
+    const participants=[actual.team1_id,actual.team2_id,actual.referee_team_id].filter(id=>id!=null);
+    if(getFullState().matches.some(m=>m.id!==id&&m.status==='active'&&(m.court===actual.court||[m.team1_id,m.team2_id,m.referee_team_id].some(team=>participants.includes(team)))))return false;
+  }
   if (!db.prepare('SELECT id FROM matches WHERE id=?').get(id)) return false;
   // Freeze final standings in the same transaction as the score write.
   const locked = db.prepare(`SELECT 1 FROM matches target WHERE target.id = ? AND (
@@ -270,6 +275,7 @@ const updateMatchReferee = db.transaction((id, teamId, expectedState = null) => 
 });
 
 module.exports = {
+  close: () => db.close(),
   saveTeamSetup, regenerateSchedule, withdrawTeam, insertBracketMatches,
   replaceTeams, saveScore, correctScore, saveScores,
   getScoringRules,

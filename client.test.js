@@ -1,42 +1,19 @@
-const { test } = require('node:test');
-const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const vm = require('node:vm');
-
-const script = fs.readFileSync('public/client.js', 'utf8');
-function browser({ publicPage = true, hidden = false, admin = false } = {}) {
-  const timers = new Map(), listeners = {};
-  let nextId = 0, reloads = 0;
-  const elements = {};
-  const document = {
-    hidden,
-    querySelector: () => publicPage ? { content: '120' } : null,
-    getElementById: id => elements[id] || null,
-    querySelectorAll: () => [],
-    addEventListener: (name, fn) => { listeners[name] = fn; },
-  };
-  vm.runInNewContext(script, { document, window: { location: { reload: () => reloads++ } },
-    setTimeout: (fn, delay) => { const id = ++nextId; timers.set(id, { fn, delay }); return id; },
-    clearTimeout: id => timers.delete(id),
-  });
-  return { document, timers, listeners, elements, reloads: () => reloads };
+const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const script=fs.readFileSync('public/client.js','utf8');
+function browser({publicPage=true,hidden=false,saved=false,bus={pages:[],channels:[]},broadcast=true,storage=true,version='initial',fetchVersion=async()=>version}={}){
+ const timers=new Map(),listeners={},requests=[];let nextId=0,reloads=0;const page={listeners};bus.pages.push(page);
+ const document={hidden,querySelector:selector=>selector==='meta[name="scores-refresh"]'?(publicPage?{content:'5'}:null):selector==='meta[name="scores-version"]'?{content:version}:selector==='meta[name="scores-saved"]'?(saved?{content:'1'}:null):null,getElementById:()=>null,querySelectorAll:()=>[],addEventListener:(name,fn)=>listeners[name]=fn};
+ const window={location:{href:'http://tournament.test/'+(publicPage?'':'admin'+(saved?'?scoreSaved=1':'')),reload:()=>reloads++},history:{replaceState:()=>{}},addEventListener:(name,fn)=>listeners[name]=fn};
+ window.localStorage={setItem(key,newValue){if(!storage)throw new Error('Storage blocked');for(const other of bus.pages)if(other!==page)other.listeners.storage?.({key,newValue});}};
+ class Channel{constructor(name){this.name=name;bus.channels.push(this);}postMessage(data){for(const channel of bus.channels)if(channel!==this&&channel.name===this.name)channel.onmessage?.({data});}close(){bus.channels=bus.channels.filter(c=>c!==this);}}
+ const context={document,window,URL,Date,Math,fetch:async(url,options)=>{requests.push({url,options});const next=await fetchVersion();return {ok:true,headers:{get:name=>name.toLowerCase()==='x-scores-version'?next:null}};},setTimeout:(fn,delay)=>{const id=++nextId;timers.set(id,{fn,delay});return id;},clearTimeout:id=>timers.delete(id)};
+ if(broadcast)context.BroadcastChannel=Channel;vm.runInNewContext(script,context);
+ return {document,timers,listeners,requests,reloads:()=>reloads,tick:async()=>{const [id,timer]=timers.entries().next().value;timers.delete(id);await timer.fn();}};
 }
-test('scores refresh after two minutes and pause while a tab is hidden', () => {
-  const page = browser();
-  assert.equal(page.timers.size, 1);
-  assert.equal([...page.timers.values()][0].delay, 120000);
-  page.document.hidden = true;
-  page.listeners.visibilitychange();
-  assert.equal(page.timers.size, 0);
-  page.document.hidden = false;
-  page.listeners.visibilitychange();
-  [...page.timers.values()][0].fn();
-  assert.equal(page.reloads(), 1);
-  assert.equal(browser({ hidden: true }).timers.size, 0);
-});
-test('admin pages never auto-refresh', () => {
-  const page = browser({ publicPage: false, admin: true });
-  assert.equal(page.timers.size, 0);
-  assert.equal(page.listeners.visibilitychange, undefined);
-
-});
+test('saving updates the second tab immediately without waiting for polling',()=>{const bus={pages:[],channels:[]},screen=browser({bus});browser({bus,publicPage:false,saved:true});assert.equal(screen.reloads(),1);assert.equal(screen.requests.length,0);});
+test('storage events update the screen without BroadcastChannel',()=>{const bus={pages:[],channels:[]},screen=browser({bus,broadcast:false});browser({bus,publicPage:false,saved:true,broadcast:false});assert.equal(screen.reloads(),1);});
+test('broadcast works with blocked storage and hidden tabs',()=>{const bus={pages:[],channels:[]},screen=browser({bus,hidden:true,storage:false});browser({bus,publicPage:false,saved:true,storage:false});assert.equal(screen.reloads(),1);});
+test('other devices check within five seconds and reload only changed scores',async()=>{let version='initial';const screen=browser({fetchVersion:async()=>version});assert.equal([...screen.timers.values()][0].delay,5000);await screen.tick();assert.equal(screen.reloads(),0);version='changed';await screen.tick();assert.equal(screen.reloads(),1);assert.equal(screen.requests[0].options.cache,'no-store');});
+test('polling pauses when hidden and checks immediately on visibility',async()=>{const screen=browser();screen.document.hidden=true;screen.listeners.visibilitychange();assert.equal(screen.timers.size,0);screen.document.hidden=false;await screen.listeners.visibilitychange();assert.equal(screen.requests.length,1);assert.equal(screen.reloads(),0);assert.equal(screen.timers.size,1);});
+test('temporary network failures retry and then show new scores',async()=>{let fail=true;const screen=browser({fetchVersion:async()=>{if(fail)throw new Error('Offline');return 'changed';}});await screen.tick();assert.equal(screen.reloads(),0);assert.equal(screen.timers.size,1);fail=false;await screen.tick();assert.equal(screen.reloads(),1);});
+test('ordinary admin pages never poll or auto-refresh',()=>{const page=browser({publicPage:false});assert.equal(page.timers.size,0);assert.equal(page.requests.length,0);assert.equal(page.reloads(),0);});

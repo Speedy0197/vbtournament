@@ -2,11 +2,9 @@ const TOURNAMENT_RULES = Object.freeze({ setTarget: 25, decidingSetTarget: 15, m
 
 function getMatchWinner(sets, rules = null, setsToWin = rules?.sets_to_win ?? 2) {
   let t1Sets = 0, t2Sets = 0;
-  for (const [index, s] of sets.entries()) {
-    if (rules) {
-      const target = index === 2 ? rules.deciding_set_target : rules.set_target;
-      if (Math.max(s.team1_score, s.team2_score) < target || Math.abs(s.team1_score - s.team2_score) < 2) return null;
-    }
+  for (const s of sets) {
+    // The organiser records the completed sets as played, including changed targets.
+    if (s.team1_score === s.team2_score) return null;
     if (s.team1_score > s.team2_score) t1Sets++;
     else if (s.team2_score > s.team1_score) t2Sets++;
   }
@@ -27,8 +25,6 @@ function getTimedWinner(match) {
 
 function getFixedSetWinner(sets, rules = null) {
   if (sets.length !== 2 || sets.some(s => s.team1_score === s.team2_score)) return null;
-  if (rules && sets.some(s => Math.max(s.team1_score, s.team2_score) < rules.set_target
-    || Math.abs(s.team1_score - s.team2_score) < 2)) return null;
   const wins = sets.filter(s => s.team1_score > s.team2_score).length;
   return wins === 1 ? 0 : wins === 2 ? 1 : 2;
 }

@@ -25,27 +25,30 @@ test('score entry is read-only and offers only Save result and Back',async t=>{
  assert.doesNotMatch(html,/Save progress|Finish game|Pause|name="finish"/);
  assert.deepEqual(await state(),before);
 });
-test('Save result requires both timed sets and completes without a finish flag',async t=>{
+test('Save result accepts one timed set and completes after the second without a finish flag',async t=>{
  const {req,state}=await fixture(t),before=await state(),route='/admin/match/'+before.matches[0].id+'/score';
- for(const invalid of [{},{s1t1:'12',s1t2:'10'},{s1t1:'12',s1t2:'10',s2t1:'10',s2t2:'10'}]){
+ for(const invalid of [{},{s1t1:'12',s1t2:'10',s2t1:'10',s2t2:'10'}]){
   assert.equal((await req(route,invalid)).status,400);assert.deepEqual(await state(),before);
  }
+ assert.equal((await req(route,{s1t1:'12',s1t2:'10'})).status,302);
+ assert.equal((await state()).matches[0].status,'active');
  assert.equal((await req(route,{s1t1:'20',s1t2:'19',s2t1:'19',s2t2:'20'})).status,302);
  const current=await state();assert.equal(current.matches[0].status,'done');
  assert.equal(current.standings.A.find(s=>s.team.id===before.matches[0].team1_id).draws,1);
 });
-test('point-based results require a complete 2–0 or 2–1 without extra sets',async t=>{
+test('point-based results save progress and reject tied or extra sets',async t=>{
  const {req,state}=await fixture(t);
  for(const m of (await state()).matches)await req('/admin/match/'+m.id+'/score',{s1t1:'20',s1t2:'18',s2t1:'20',s2t2:'18',finish:'yes'});
  const semi=(await state()).matches.find(m=>m.phase==='gold_sf'),route='/admin/match/'+semi.id+'/score',before=await state();
  for(const invalid of [
-  {s1t1:'30',s1t2:'10',s2t1:'30',s2t2:'10'},
-  {s1t1:'25',s1t2:'20'},
-  {s1t1:'25',s1t2:'20',s2t1:'20',s2t2:'25'},
   {s1t1:'25',s1t2:'20',s2t1:'25',s2t2:'20',s3t1:'15',s3t2:'10'},
-  {s1t1:'25',s1t2:'24',s2t1:'25',s2t2:'20'},
-  {s1t1:'25',s1t2:'20',s2t1:'20',s2t2:'25',s3t1:'15',s3t2:'14'}
+  {s1t1:'25',s1t2:'25'},
+  {s1t1:'25',s1t2:'20',s2t1:'20',s2t2:'25',s3t1:'15',s3t2:'15'}
  ]){assert.equal((await req(route,invalid)).status,400);assert.deepEqual(await state(),before);}
+ assert.equal((await req(route,{s1t1:'25',s1t2:'20'})).status,302);
+ assert.equal((await state()).matches.find(m=>m.id===semi.id).status,'active');
+ assert.equal((await req(route,{s1t1:'25',s1t2:'20',s2t1:'20',s2t2:'25'})).status,302);
+ assert.equal((await state()).matches.find(m=>m.id===semi.id).status,'active');
  assert.equal((await req(route,{s1t1:'25',s1t2:'20',s2t1:'20',s2t2:'25',s3t1:'16',s3t2:'14'})).status,302);
  assert.equal((await state()).matches.find(m=>m.id===semi.id).status,'done');
 });

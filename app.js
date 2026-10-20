@@ -88,6 +88,7 @@ async function buildState() {
   const placementStandings = tournament.calculateStandings(teams.filter(t => placementIds.has(t.id)), placementMatches, 'league');
   return { teams, matches, standings, placementStandings, mode, groupNames, rules };
 }
+const stateVersion = state => createHash('sha256').update(JSON.stringify(state)).digest('hex');
 
 // ── Bracket Advancement ───────────────────────────────────────────────────────
 async function tryAdvanceBracket(attempt = 0) {
@@ -167,21 +168,21 @@ post('/admin/team/:id/icon', requireAdmin, upload.single('icon'), async (req, re
 });
 
 // ── Admin Dashboard ───────────────────────────────────────────────────────────
-async function renderAdmin(res, error = null) {
+async function renderAdmin(res, error = null, scoreSaved = false) {
   const { teams, matches, standings, placementStandings, mode, groupNames, rules } = await buildState();
   const groupMatches = matches.filter(m => m.phase === 'group');
   const bracketMatches = matches.filter(m => m.phase !== 'group');
   const allGroupDone = groupMatches.length > 0 && groupMatches.every(m => m.status === 'done');
   res.render('admin/index', {
     teams, groupMatches, bracketMatches, standings, placementStandings, allGroupDone, mode, groupNames, rules,
-    canSetup: setupOpen(matches), canWithdraw: teams.length === 7 && setupOpen(matches), error,
+    canSetup: setupOpen(matches), canWithdraw: teams.length === 7 && setupOpen(matches), error, scoreSaved,
   });
 }
 
-get('/admin', requireAdmin, async (req, res) => renderAdmin(res, req.query.advanceError ? 'Result saved. Bracket creation failed; use Retry bracket creation below.' : null));
+get('/admin', requireAdmin, async (req, res) => renderAdmin(res, req.query.advanceError ? 'Result saved. Bracket creation failed; use Retry bracket creation below.' : null, req.query.scoreSaved === '1'));
 
 post('/admin/match-rules', requireAdmin, async (req, res) => {
-  res.status(410).send('Tournament rules are fixed: league 2 × 10 minutes; playoffs and placement best of three at 25/25/15, win by two.');
+  res.status(410).send('Record completed sets as played on the score form. No rule-setting step is required.');
 });
 
 // ── Print ─────────────────────────────────────────────────────────────────────
@@ -275,22 +276,26 @@ post('/admin/match/:id/score', requireAdmin, async (req, res) => {
   if (!entered.length || entered.some((s,i)=>s.n!==i+1 || !valid(s.t1) || !valid(s.t2))) return fail('Enter whole-number scores from 0 to 9999 for both teams, starting with set 1.');
   const scores = entered.map(s=>({n:s.n,t1:Number(s.t1),t2:Number(s.t2)}));
   const setScores = scores.map(s=>({team1_score:s.t1,team2_score:s.t2}));
+  let complete;
   if (match.scoring_format === 'timed') {
     const periods = match.timed_periods || 1;
-    if (scores.length !== periods || (periods===2 && scores.some(s=>s.t1===s.t2))) return fail('Enter both timed set results. A tied set needs one deciding rally; a 1–1 match draw is allowed.');
+    if (scores.length > periods || (periods===2 && scores.some(s=>s.t1===s.t2))) return fail('Enter each completed timed set. A tied set needs one deciding rally; leave unplayed sets blank.');
+    complete = scores.length === periods;
   } else {
-    const winner = match.fixed_sets===2 ? tournament.getFixedSetWinner(setScores,match) : tournament.getMatchWinner(setScores,match);
-    const validTerminalScores = setScores.every((set,i) => { const target=i===2?match.deciding_set_target:match.set_target; const high=Math.max(set.team1_score,set.team2_score),margin=Math.abs(set.team1_score-set.team2_score); return (high===target&&margin>=2)||(high>target&&margin===2); });
+    const winner = match.fixed_sets===2 ? tournament.getFixedSetWinner(setScores) : tournament.getMatchWinner(setScores,null,match.sets_to_win??2);
     const alreadyFinished = match.fixed_sets!==2 && setScores.length>1 && tournament.getMatchWinner(setScores.slice(0,-1),match)!==null;
-    if (winner===null || !validTerminalScores || alreadyFinished || (match.fixed_sets===2 && scores.length!==2)) return fail('Enter a complete match result: two set wins, first two sets to '+match.set_target+', deciding third set to '+match.deciding_set_target+', win by two. Leave set 3 blank after 2–0.');
+    const maximum = match.fixed_sets===2 ? 2 : (match.sets_to_win??2)*2-1;
+    if (scores.some(s=>s.t1===s.t2) || scores.length>maximum || alreadyFinished) return fail('Enter completed, untied sets only. Leave unplayed sets blank, including set 3 after 2–0.');
+    complete = winner !== null;
   }
   if(match.status==='done'){
+    if (!complete) return fail('This match is already complete. Enter its complete corrected result; saved later sets cannot be removed.');
     const result=await db.correctScore(match.id,scores,match);
     if(!result.ok)return res.status(409).render('admin/match',{match:{...match,sets:entered.map(s=>({set_number:s.n,team1_score:s.t1,team2_score:s.t2}))},error:result.error||'The tournament changed. Reload Admin before correcting this result.',locked:false,scoreVersion:scoreVersion(match)});
-  }else if (!await db.saveScore(match.id,scores,'done',match)) return renderAdmin(res.status(409),'This result is locked or the schedule changed. Reload Admin.');
-  try { await tryAdvanceBracket(); }
-  catch (error) { console.error(error); return res.redirect('/admin?advanceError=1'); }
-  res.redirect('/admin');
+  }else if (!await db.saveScore(match.id,scores,complete?'done':'active',match)) return renderAdmin(res.status(409),'This result is locked or the schedule changed. Reload Admin.');
+  try { if (complete) await tryAdvanceBracket(); }
+  catch (error) { console.error(error); return res.redirect('/admin?scoreSaved=1&advanceError=1'); }
+  res.redirect('/admin?scoreSaved=1');
 });
 
 post('/admin/advance-bracket', requireAdmin, async (req, res) => {
@@ -301,13 +306,15 @@ post('/admin/advance-bracket', requireAdmin, async (req, res) => {
 // ── API ───────────────────────────────────────────────────────────────────────
 get('/api/state', async (req, res) => {
   const { teams, matches, standings, placementStandings, mode, groupNames, rules } = await buildState();
-  res.json({ teams, matches, standings, placementStandings, mode, groupNames, rules });
+  const state = { teams, matches, standings, placementStandings, mode, groupNames, rules };
+  res.set('X-Scores-Version', stateVersion(state));
+  res.json(state);
 });
 
 // ── Public Pages ─────────────────────────────────────────────────────────────
 get('/', async (req, res) => {
-  const { teams, matches, standings, placementStandings, mode, groupNames, rules } = await buildState();
-  res.render('index', { teams, matches, standings, placementStandings, mode, groupNames, rules });
+  const state = await buildState();
+  res.render('index', { ...state, scoresVersion: stateVersion(state) });
 });
 
 

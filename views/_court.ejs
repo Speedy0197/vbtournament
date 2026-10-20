@@ -4,8 +4,8 @@
 <% if(ui.time(m)){ %><time><%= ui.time(m) %></time><% } %>
 </div><div class="court-body">
 <div class="faceoff"><%- include('_team',{team:ui.team(m,1),size:'hero',vertical:true}) %>
-<span class="versus">VS</span><%- include('_team',{team:ui.team(m,2),size:'hero',vertical:true}) %></div>
-<% if(m.sets.length){ %><div class="court-result"><%- include('_score',{m}) %></div><% } %>
+<% if(admin){ %><span class="versus">VS</span><% }else{ const result=ui.result(m); %><span class="display-match-score"><%= result.a %>–<%= result.b %><small>sets</small></span><% } %><%- include('_team',{team:ui.team(m,2),size:'hero',vertical:true}) %></div>
+<% if(m.sets.length){ %><% if(admin){ %><div class="court-result"><%- include('_score',{m}) %></div><% }else{ %><span class="set-results display-set-results"><%= m.sets.map(s=>s.team1_score+'–'+s.team2_score).join(' · ') %></span><% } %><% } %>
 <%- include('_referee',{m}) %>
 <% if(admin){ %>
 <% if(ui.blocked(m,allMatches)){ %><p class="waiting">Finish the earlier match on this court first.</p>

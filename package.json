@@ -4,10 +4,10 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node --test tournament.test.js server.test.js client.test.js seven-team.test.js fixed-tournament.test.js ui.test.js score-corrections.test.js timing.test.js",
+    "test": "node --test tournament.test.js server.test.js client.test.js seven-team.test.js fixed-tournament.test.js ui.test.js score-corrections.test.js timing.test.js score-progress.test.js",
     "build:cloudflare": "node scripts/build-cloudflare.mjs",
     "dev:cloudflare": "wrangler dev",
-    "test:cloudflare": "npm run build:cloudflare && node --test cloudflare.test.mjs score-corrections.cloudflare.test.mjs domain-gateway.test.mjs timing.cloudflare.test.mjs",
+    "test:cloudflare": "npm run build:cloudflare && node --test cloudflare.test.mjs score-corrections.cloudflare.test.mjs score-progress.cloudflare.test.mjs domain-gateway.test.mjs timing.cloudflare.test.mjs",
     "db:local": "wrangler d1 migrations apply DB --local",
     "deploy:cloudflare": "wrangler deploy",
     "build:domain": "node scripts/build-domain-gateway.mjs",

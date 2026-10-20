@@ -26,7 +26,9 @@ npm test
 npm run test:cloudflare
 ```
 
-The latest deployed update passed 120 tests across local SQLite, the compiled Cloudflare Worker/D1 and the custom-domain gateway. Integration tests use isolated emulator storage. Five-minute breaks and adaptive league timing are live; see HANDOFF.md for behavior and deployment details.
+The suites cover local SQLite, the compiled Cloudflare Worker/D1 and the custom-domain gateway, including adaptive timing, partial-set saves, score corrections, standings and tab synchronization. Integration tests use isolated emulator storage. Five-minute breaks and adaptive league timing are preserved; see HANDOFF.md for behavior and deployment details.
+
+Score entry keeps all set rows and the Save result button. Save after one completed set and leave later sets blank; reopen the same match to continue. Enter the points actually played, including 15–12 and 29–27. Incomplete matches stay in progress and do not advance the bracket. The Scores page shows each team once with W/D/L. Another tab in the same browser and origin updates immediately after a successful save; other devices check for changes every five seconds while visible.
 
 ## Deploy an update
 

@@ -1,22 +1,23 @@
-<%- include('_header',{title:'Scores',refresh:true}) %>
+<%- include('_header',{title:'Scores',refresh:true,bodyClass:'player-display'}) %>
 <div class="topline"><h1>Scores</h1><div class="sync"><a class="btn btn-secondary btn-sm" href="/">Refresh scores</a></div></div>
 <% const finished=ui.finalResults(teams,matches); const courtMatches=ui.nextByCourt(matches); const showingIds=new Set(courtMatches.map(m=>m.id)); const pending=matches.filter(m=>m.status==='pending'&&!showingIds.has(m.id)); const completed=matches.filter(m=>m.phase==='group'&&m.status==='done').reverse(); const playoffs=matches.filter(m=>m.phase!=='group'); %>
 <% if(finished){ %><%- include('_final_standings',{finished}) %><% }else{ %>
 <div class="sectionhead"><h2>Next on court</h2></div>
 <div class="courts"><% for(const court of [1,2]){ const m=courtMatches.find(m=>m.court===court); if(m){ %><%- include('_court',{m,admin:false,allMatches:matches}) %>
 <% }else{ %><article class="court"><div class="court-heading"><strong>Court <%= court %></strong></div><p class="empty">The schedule will appear here.</p></article><% }} %></div>
-<div class="main-columns"><%- include('_standings',{rows:standings.A,caption:'League standings',offset:0,placement:false}) %>
+<div class="main-columns"><%- include('_current_standings',{leagueRows:standings.A,placementRows:placementStandings}) %>
 <section class="up-next"><div class="sectionhead"><h2>Coming up</h2><span>Following matches</span></div><div class="queue">
 <% for(const m of pending.slice(0,4)){ %><article class="queue-item"><div class="queue-meta"><strong>Court <%= m.court %></strong><time><%= ui.time(m)||ui.phase(m) %></time></div>
 <%- include('_team',{team:ui.team(m,1),size:'small',vertical:false}) %><%- include('_team',{team:ui.team(m,2),size:'small',vertical:false}) %><%- include('_referee',{m}) %></article><% } %>
 <% if(!pending.length){ %><p class="empty"><%= matches.length?'No more scheduled games.':'The schedule is being prepared.' %></p><% } %></div></section></div>
 <% } %>
 <% if(playoffs.length){ %>
+<details class="full-schedule"><summary>Playoff and placement results</summary>
 <section class="rounds"><div class="sectionhead"><h2>Court 1 · Semifinals and final</h2></div><% for(const m of playoffs.filter(m=>m.phase!=='placement')){ %><%- include('_match_row',{m,admin:false,allMatches:matches}) %><% } %></section>
-<% if(!finished){ %><%- include('_placement_standings',{placementStandings}) %><% } %>
 <section class="rounds"><div class="sectionhead"><h2>Court 2 · Placement games</h2></div><% for(const m of playoffs.filter(m=>m.phase==='placement')){ %><%- include('_match_row',{m,admin:false,allMatches:matches}) %><% } %></section>
+</details>
 <% } %>
-<% if(completed.length){ %><section class="rounds"><div class="sectionhead"><h2>Results</h2></div><% for(const m of completed){ %><%- include('_match_row',{m,admin:false,allMatches:matches}) %><% } %></section><% } %>
+<% if(completed.length){ %><details class="full-schedule"><summary>League results (<%= completed.length %>)</summary><% for(const m of completed){ %><%- include('_match_row',{m,admin:false,allMatches:matches}) %><% } %></details><% } %>
 <% if(matches.some(m=>m.phase==='group'&&m.status==='pending')){ %><details class="full-schedule"><summary>Full league schedule</summary><% for(const m of matches.filter(m=>m.phase==='group')){ %><%- include('_match_row',{m,admin:false,allMatches:matches}) %><% } %></details><% } %>
 <footer class="product-footer"><span>Petrus Volleyball Turnier</span><a href="/qr">QR Code</a></footer>
 <%- include('_footer') %>

@@ -15,12 +15,12 @@ test('two timed sets split a match even when total rally points differ', () => {
   assert.equal(calculateStandings(teams,[match],'league')[0].leaguePoints,0);
 });
 
-test('fixed playoffs need two set wins, targets 25/25/15 and a two-point margin',()=>{
+test('playoffs need two recorded set wins and accept the scores actually played',()=>{
   const rules={set_target:25,deciding_set_target:15,sets_to_win:2};
   assert.equal(getMatchWinner([{team1_score:25,team2_score:20}],rules),null);
-  assert.equal(getMatchWinner([{team1_score:25,team2_score:20},{team1_score:25,team2_score:24}],rules),null);
+  assert.equal(getMatchWinner([{team1_score:15,team2_score:12},{team1_score:15,team2_score:14}],rules),1);
   assert.equal(getMatchWinner([{team1_score:25,team2_score:20},{team1_score:26,team2_score:24}],rules),1);
-  assert.equal(getMatchWinner([{team1_score:25,team2_score:20},{team1_score:20,team2_score:25},{team1_score:15,team2_score:14}],rules),null);
+  assert.equal(getMatchWinner([{team1_score:15,team2_score:12},{team1_score:12,team2_score:15},{team1_score:29,team2_score:27}],rules),1);
   assert.equal(getMatchWinner([{team1_score:25,team2_score:20},{team1_score:20,team2_score:25},{team1_score:16,team2_score:14}],rules),1);
 });
 
@@ -53,10 +53,9 @@ test('seven-team event runs two timed sets, sequential semifinals and an indepen
   db.updateMatchStatus(first.id,'active');
   const blockedByReferee=current.matches.find(m=>m.court!==first.court && [m.team1_id,m.team2_id].includes(first.referee_team_id));
   assert.equal((await request('/admin/match/'+blockedByReferee.id+'/score',{s1t1:'20',s1t2:'18',s2t1:'20',s2t2:'18'})).status,409);
-  assert.equal((await request(scoreRoute,{s1t1:'12',s1t2:'10'})).status,400);
+  assert.equal((await request(scoreRoute,{s1t1:'12',s1t2:'10'})).status,302);
   assert.equal((await state()).matches[0].status,'active');
   for(const invalid of [
-    {s1t1:'12',s1t2:'10'},
     {s1t1:'12',s1t2:'10',s2t1:'10',s2t2:'10'},
     {s1t1:'12',s1t2:'10',s2t1:'11x',s2t2:'10'},
     {s1t1:'12',s1t2:'10',s2t1:'11',s2t2:'10',s3t1:'1',s3t2:'0'}
@@ -80,16 +79,16 @@ test('seven-team event runs two timed sets, sequential semifinals and an indepen
   assert.equal(pairs.size,3);
   assert.deepEqual([...new Set(placement.flatMap(m=>[m.team1_id,m.team2_id]))].sort(),ranking.slice(4).sort());
   assert.equal((await request('/admin/match/'+semis[1].id+'/score')).status,409);
-  assert.equal((await request('/admin/match/'+semis[0].id+'/score',{s1t1:'15',s1t2:'14'})).status,400);
-  assert.equal((await state()).matches.find(m=>m.id===semis[0].id).status,'pending');
+  assert.equal((await request('/admin/match/'+semis[0].id+'/score',{s1t1:'15',s1t2:'14'})).status,302);
+  assert.equal((await state()).matches.find(m=>m.id===semis[0].id).status,'active');
   const placementRoute='/admin/match/'+placement[0].id+'/score';
   const placementForm=await (await request(placementRoute)).text();
   assert.match(placementForm,/name="s2t1"/);
   assert.match(placementForm,/name="s3t1"/);
-  assert.equal((await request(placementRoute,{s1t1:'25',s1t2:'20'})).status,400);
-  assert.equal((await state()).matches.find(m=>m.id===placement[0].id).status,'pending');
-  assert.equal((await request(placementRoute,{s1t1:'25',s1t2:'20',s2t1:'20',s2t2:'25'})).status,400);
-  assert.equal((await state()).matches.find(m=>m.id===placement[0].id).status,'pending');
+  assert.equal((await request(placementRoute,{s1t1:'25',s1t2:'20'})).status,302);
+  assert.equal((await state()).matches.find(m=>m.id===placement[0].id).status,'active');
+  assert.equal((await request(placementRoute,{s1t1:'25',s1t2:'20',s2t1:'20',s2t2:'25'})).status,302);
+  assert.equal((await state()).matches.find(m=>m.id===placement[0].id).status,'active');
   assert.equal((await request(placementRoute,{s1t1:'25',s1t2:'20',s2t1:'20',s2t2:'25',s3t1:'15',s3t2:'13'})).status,302);
   assert.equal((await state()).matches.find(m=>m.id===placement[0].id).status,'done');
   for (const m of placement.slice(1)) {

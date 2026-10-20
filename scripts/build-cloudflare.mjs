@@ -18,10 +18,11 @@ async function templates(dir = 'views') {
 }
 const viewLocals = {
   _final_standings:['finished'], _team:['team','size','vertical'], _court:['m','admin','allMatches'], _standings:['rows','caption','offset','placement'],
-  _header: ['title', 'refresh', 'bodyClass', 'hideNav'], _footer: [], _match_row: ['m','admin','allMatches'], _score: ['m'], _referee: ['m'], _placement_standings: ['placementStandings'],
-  index: ['rules', 'mode', 'teams', 'matches', 'standings', 'placementStandings', 'groupNames'],
+  _header: ['title', 'refresh', 'bodyClass', 'hideNav', 'scoresVersion', 'scoreSaved'], _footer: [], _match_row: ['m','admin','allMatches'], _score: ['m'], _referee: ['m'], _placement_standings: ['placementStandings'],
+  _current_standings: ['leagueRows','placementRows'],
+  index: ['rules', 'mode', 'teams', 'matches', 'standings', 'placementStandings', 'groupNames', 'scoresVersion'],
   login: ['error'], qr: ['qrDataUrl', 'baseUrl'],
-  'admin/index': ['rules', 'teams', 'groupMatches', 'bracketMatches', 'standings', 'placementStandings', 'allGroupDone', 'mode', 'groupNames', 'canWithdraw', 'canSetup', 'error'],
+  'admin/index': ['rules', 'teams', 'groupMatches', 'bracketMatches', 'standings', 'placementStandings', 'allGroupDone', 'mode', 'groupNames', 'canWithdraw', 'canSetup', 'error', 'scoreSaved'],
   'admin/_schedule_form': ['teams', 'groupMatches', 'mode'],
   'admin/setup': ['teams', 'canSetup', 'rosterVersion', 'error', 'hasSchedule'], 'admin/match': ['match', 'error', 'locked', 'scoreVersion'],
   'admin/print': ['standings', 'placementStandings', 'groupMatches', 'bracketMatches', 'mode', 'groupNames', 'allGroupDone'],
